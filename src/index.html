@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumi</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "./vendor/three.module.js"
+    } }
+  </script>
+</head>
+<body>
+  <header class="titlebar">
+    <div class="brand">
+      <img src="../build/icon.png" alt="" class="logo">
+      <span class="name">Lumi</span>
+      <span class="tag">lithophane maker</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="image" class="active"><span data-icon="image"></span>Image</button>
+      <button data-tab="edit"><span data-icon="sliders"></span>Edit</button>
+      <button data-tab="model"><span data-icon="cube"></span>Model</button>
+      <button data-tab="export"><span data-icon="download"></span>Export</button>
+      <span class="tab-sep"></span>
+      <button data-tab="pop" class="pop-tab"><span data-icon="pop"></span>Pop 3D</button>
+    </nav>
+    <div class="title-actions">
+      <button class="icon-btn" id="themeBtn" title="Theme: system / light / dark"><span data-icon="theme"></span></button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel" id="panel"></aside>
+
+    <section class="stage">
+      <div class="stage-bar">
+        <div class="seg" id="viewSeg">
+          <button data-view="2d"><span data-icon="image"></span>Image</button>
+          <button data-view="3d" class="active"><span data-icon="cube"></span>3D</button>
+        </div>
+        <div class="tools tools-3d">
+          <button class="icon-btn" data-act="fit" title="Fit to view (F)"><span data-icon="fit"></span></button>
+          <button class="icon-btn" data-act="front" title="Front view (1)"><span data-icon="front"></span></button>
+          <button class="icon-btn" data-act="iso" title="3/4 view (2)"><span data-icon="iso"></span></button>
+          <button class="icon-btn" data-act="top" title="Top view (3)"><span data-icon="top"></span></button>
+          <span class="sep"></span>
+          <button class="icon-btn toggle" data-act="wire" title="Wireframe (W)"><span data-icon="wire"></span></button>
+          <button class="icon-btn toggle on" data-act="grid" title="Grid (G)"><span data-icon="grid"></span></button>
+          <button class="icon-btn toggle" data-act="spin" title="Auto rotate (R)"><span data-icon="spin"></span></button>
+          <button class="icon-btn" data-act="shot" title="Save screenshot"><span data-icon="camera"></span></button>
+        </div>
+        <div class="tools tools-2d">
+          <button class="icon-btn toggle" data-act="compare" title="Hold to see original"><span data-icon="compare"></span></button>
+        </div>
+      </div>
+
+      <div class="view" id="view3d"></div>
+      <div class="view hidden" id="view2d">
+        <canvas id="canvas2d"></canvas>
+      </div>
+
+      <div class="busy hidden" id="busy"><div class="spinner"></div><span>Building preview…</span></div>
+      <div class="dims" id="dims"></div>
+
+      <div class="drop hidden" id="drop">
+        <div class="drop-card"><span data-icon="upload"></span><b>Drop your image</b><small>PNG · JPG · WEBP · BMP · GIF</small></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar" id="status"></footer>
+
+  <div class="modal hidden" id="modal">
+    <div class="modal-card">
+      <h3 id="modalTitle">Exporting</h3>
+      <p id="modalStage">Preparing…</p>
+      <div class="progress"><div id="modalBar"></div></div>
+      <p class="muted" id="modalExtra"></p>
+      <div class="modal-actions"><button class="btn" id="modalCancel">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <input type="file" id="fileInput" accept="image/*" hidden>
+  <input type="file" id="presetInput" accept=".json,application/json" hidden>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

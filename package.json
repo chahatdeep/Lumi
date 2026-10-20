@@ -1,0 +1,66 @@
+{
+  "name": "lumi",
+  "productName": "Lumi",
+  "version": "1.0.0",
+  "description": "Lumi - Lithophane and 3D Model Maker",
+  "main": "main.js",
+  "author": "Chahat Deep Singh",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "scripts": {
+    "start": "node build/vendor.js && electron .",
+    "vendor": "node build/vendor.js",
+    "icon": "node build/make-icon.js",
+    "dist": "node build/vendor.js && electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^4.3.1",
+    "earcut": "^3.2.4",
+    "electron": "^38.0.0",
+    "electron-builder": "^25.1.8",
+    "fflate": "^0.8.2",
+    "three": "^0.170.0"
+  },
+  "build": {
+    "appId": "com.praiselab.lumi",
+    "productName": "Lumi",
+    "files": [
+      "main.js",
+      "preload.js",
+      "hf.js",
+      "local3d.js",
+      "python/**/*",
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Lumi"
+    },
+    "portable": {
+      "artifactName": "Lumi-${version}-portable.exe"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [
+      "python/**/*"
+    ]
+  },
+  "dependencies": {
+    "@gradio/client": "^2.7.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chahatdeep/lumi.git"
+  },
+  "homepage": "https://github.com/chahatdeep/lumi"
+}

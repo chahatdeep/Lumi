@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# build output (installers, unpacked app)
+dist/
+out/
+
+# vendored runtime libs: regenerated from node_modules by `npm run vendor` / `npm start`
+src/vendor/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# secrets / local config
+.env
+.env.*
+*.pem
+*.key
+
+# logs & OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editor
+.vscode/
+.idea/

@@ -154,6 +154,22 @@ input[type="range"] { flex: 1; accent-color: #ff9f0a; cursor: pointer; }
 .tile-photo figcaption { position: absolute; left: 18px; bottom: 16px; padding: 6px 12px; border-radius: 980px; font-size: 13px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
 
+/* film */
+.film { padding-top: 90px; }
+.film-frame { position: relative; max-width: 1200px; margin: 48px auto 0; padding: 0 22px; }
+.film-frame video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: var(--radius); background: #000; box-shadow: var(--shadow); }
+.film-play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 12px; padding: 14px 24px 14px 18px; border: 0; border-radius: 980px;
+  background: rgba(255, 255, 255, .16); color: #fff; font: 600 17px/1 inherit; letter-spacing: -.01em; cursor: pointer;
+  backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); transition: transform .2s, background .2s;
+}
+.film-play:hover { background: rgba(255, 255, 255, .24); transform: translate(-50%, -50%) scale(1.03); }
+.film-play svg { width: 26px; height: 26px; fill: #fff; }
+.film-play small { font-size: 13px; opacity: .75; font-weight: 500; }
+.film-frame.playing .film-play { opacity: 0; pointer-events: none; }
+
 /* app embed */
 .device { max-width: 1200px; margin: 56px auto 0; padding: 0 22px; }
 .device > * { box-shadow: none; }

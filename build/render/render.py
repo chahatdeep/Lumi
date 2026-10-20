@@ -104,6 +104,7 @@ for backend in ('OPTIX', 'CUDA'):
         pass
 cy.samples = samples
 cy.use_denoising = True
+cy.use_adaptive_sampling = True; cy.adaptive_threshold = float(__import__('os').environ.get('NOISE', '0.003')); cy.adaptive_min_samples = 128
 cy.denoiser = 'OPENIMAGEDENOISE'
 cy.denoising_input_passes = 'RGB_ALBEDO_NORMAL'
 cy.denoising_prefilter = 'ACCURATE'

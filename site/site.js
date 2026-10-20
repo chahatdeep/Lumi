@@ -89,6 +89,13 @@ document.getElementById('showFrame').addEventListener('click', () => {
 });
 lb.addEventListener('click', () => lb.close());
 
+// ---------------------------------------------------------------- film
+const ad = document.getElementById('adVideo');
+const adFrame = ad.parentElement;
+document.getElementById('adPlay').addEventListener('click', () => { ad.muted = false; ad.play(); });
+ad.addEventListener('play', () => adFrame.classList.add('playing'));
+ad.addEventListener('ended', () => adFrame.classList.remove('playing'));
+
 // ---------------------------------------------------------------- copy build commands
 document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
   const text = b.parentElement.querySelector('code').innerText.split('\n').filter((l) => l && !l.startsWith('#')).join('\n');

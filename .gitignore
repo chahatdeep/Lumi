@@ -36,3 +36,8 @@ _site/
 
 # local tooling
 .claude/
+
+# ad deliverables and previews (the site keeps its own copy in site/media)
+/lumi-ad.mp4
+/ad-preview*.mp4
+/ad-music*.m4a

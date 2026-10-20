@@ -31,7 +31,17 @@ let html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
 const swap = (a, b) => { if (!html.includes(a)) throw new Error(`site build: "${a}" not found in src/index.html`); html = html.replace(a, b); };
 swap('<title>Lumi</title>', `<title>Lumi · Lithophane Maker</title>
   <meta name="description" content="Make a 3D-printable lithophane from any photo, right in your browser. Nothing is uploaded.">
-  <link rel="icon" href="icon.png">`);
+  <link rel="icon" href="icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumi">
+  <meta property="og:url" content="https://chahatdeep.github.io/Lumi/app/">
+  <meta property="og:title" content="Lumi · Lithophane Maker">
+  <meta property="og:description" content="Make a 3D-printable lithophane from any photo, right in your browser. Nothing is uploaded.">
+  <meta property="og:image" content="https://chahatdeep.github.io/Lumi/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://chahatdeep.github.io/Lumi/og-card.png">`);
 swap('<link rel="stylesheet" href="styles.css">', '<link rel="stylesheet" href="styles.css">\n  <link rel="stylesheet" href="web.css">');
 swap('src="../build/icon.png"', 'src="icon.png"');
 swap('<div class="title-actions">', `<div class="title-actions">

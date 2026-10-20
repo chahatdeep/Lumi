@@ -11,7 +11,8 @@
     "vendor": "node build/vendor.js",
     "icon": "node build/make-icon.js",
     "dist": "node build/vendor.js && electron-builder --win nsis portable",
-    "site": "node build/vendor.js && node build/site.js"
+    "site": "node build/vendor.js && node build/site.js",
+    "card": "electron build/social-card.js"
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.3.1",

@@ -90,6 +90,13 @@ python -m http.server 8080 --directory _site   # then open http://localhost:8080
 
 Every push to `main` builds and deploys it through `.github/workflows/pages.yml`.
 
+The real-light renders on the site come from `build/render/`:
+- `make-stl.js` builds a lithophane with Lumi's engine.
+- `make-3d.js` runs Pop 3D's local Hunyuan3D-2 pipeline.
+- `render.py` and `render-bust.py` are the Blender Cycles scenes.
+
+`npm run card` regenerates the link-preview image.
+
 ## How to use
 
 ### Make a lithophane
@@ -157,5 +164,7 @@ Lumi is **source-available for non-commercial use** under the [PolyForm Noncomme
 **Commercial use needs a separate license.** This includes selling Lumi, selling prints made as part of a business, or using it inside a company. For commercial licensing, contact **Chahat Deep Singh** via [GitHub](https://github.com/chahatdeep).
 
 Copyright © 2026 Chahat Deep Singh. See [NOTICE](NOTICE).
+
+**Demo photo:** the website, screenshots and renders use ["Novak Djokovic"](https://commons.wikimedia.org/wiki/File:Novak_Djokovic_(34775891004)_(cropped).jpg) by Andrew Campbell, licensed [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). It was cropped, turned into a lithophane and a 3D model, and rendered. Lumi is not affiliated with or endorsed by Novak Djokovic.
 
 Third-party libraries (three.js, fflate, earcut, transformers.js, onnxruntime-web, @gradio/client and Electron) and AI models (Depth Anything V2, RMBG-1.4, Hunyuan3D-2/2.1, TRELLIS and Marigold) keep their own licenses. Some models, such as RMBG-1.4 and Hunyuan3D, have their own non-commercial or regional terms. Check them before using outputs commercially.

@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "../../src/vendor/three.module.js" } }</script>
+<script type="module">
+  // Runs Lumi's real export pipeline (same modules as the app) on one image.
+  import { orient, process, sampleGrid } from '../../src/imageproc.js';
+  import { computeLayout } from '../../src/layout.js';
+  import { buildModel } from '../../src/mesh.js';
+  import { simplifyMesh } from '../../src/simplify.js';
+  import { toSTLBinary } from '../../src/exporters.js';
+  import { cleanMesh, parseMesh } from '../../src/pop.js';
+
+  window.makeSTL = async (imgUrl, settings) => {
+    const img = new Image();
+    img.src = imgUrl;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const processed = process(orient(c, settings), settings);
+    const L = computeLayout(settings, 'export');
+    const gray = sampleGrid(processed.canvas, L.imgCols, L.imgRows);
+    const m = buildModel(settings, gray, 'export');
+    const r = simplifyMesh(m.pos, m.idx, { tolerance: 0.02, maxTriangles: settings.maxTriangles });
+    return { stl: toSTLBinary(r.pos, r.idx, 'Lumi'), raw: m.idx.length / 3, tris: r.idx.length / 3, size: m.stats.size };
+  };
+  // Pop 3D: imported mesh → repair, flat base, rescale, optimise (as src/worker.js pop-load + pop-export)
+  window.popSTL = (bytes, s) => {
+    const clean = cleanMesh(parseMesh(bytes, 'glb'), s);
+    const r = simplifyMesh(clean.pos, clean.idx, { tolerance: 0.02, maxTriangles: s.popMaxTris });
+    return { stl: toSTLBinary(r.pos, r.idx, 'Lumi'), tris: r.idx.length / 3, size: clean.report.size, report: clean.report };
+  };
+  document.title = 'ready';
+</script>

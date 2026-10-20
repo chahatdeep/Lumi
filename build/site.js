@@ -14,7 +14,9 @@ fs.mkdirSync(app, { recursive: true });
 
 // landing page
 for (const f of fs.readdirSync(path.join(root, 'site'))) {
-  if (f !== 'web.css') cp(`site/${f}`, path.join(out, f));
+  if (f === 'web.css') continue;
+  if (fs.statSync(path.join(root, 'site', f)).isDirectory()) fs.cpSync(path.join(root, 'site', f), path.join(out, f), { recursive: true });
+  else cp(`site/${f}`, path.join(out, f));
 }
 cp('build/icon.png', path.join(out, 'assets', 'icon.png'));
 for (const f of fs.readdirSync(path.join(root, 'docs'))) if (f.endsWith('.png')) cp(`docs/${f}`, path.join(out, 'assets', f));
@@ -23,6 +25,27 @@ for (const f of fs.readdirSync(path.join(root, 'docs'))) if (f.endsWith('.png'))
 for (const f of fs.readdirSync(path.join(root, 'src'))) {
   if (/\.(js|css)$/.test(f) && f !== 'ai-worker.js') cp(`src/${f}`, path.join(app, f));
 }
+// the web build opens on a real photo (site/media/djokovic.jpg, CC BY 2.0) instead of the drawn demo
+cp('site/media/djokovic.jpg', path.join(app, 'demo.jpg'));
+let appJs = fs.readFileSync(path.join(app, 'app.js'), 'utf8');
+const demoCalls = appJs.split("loadSource(demoImage(), 'lumi-demo')").length - 1;
+if (demoCalls !== 2) throw new Error(`site build: expected 2 demo loads in src/app.js, found ${demoCalls}`);
+appJs = appJs.replaceAll("loadSource(demoImage(), 'lumi-demo')", 'loadDemoPhoto()') + `
+// web build: demo photo "Novak Djokovic" by Andrew Campbell, CC BY 2.0 (cropped)
+async function loadDemoPhoto() {
+  try {
+    const blob = await (await fetch('demo.jpg')).blob();
+    await loadFile(new File([blob], 'djokovic-lithophane.jpg', { type: 'image/jpeg' }));
+  } catch { loadSource(demoImage(), 'lumi-demo'); }
+}
+// web build: keep the theme in sync with the landing page that embeds this app
+window.addEventListener('message', (e) => {
+  if (e.origin !== location.origin || !['system', 'light', 'dark'].includes(e.data?.lumiTheme)) return;
+  theme = e.data.lumiTheme; store.set('lumi.theme', theme); applyTheme();
+});
+$('#themeBtn').addEventListener('click', () => { if (parent !== window) parent.postMessage({ lumiTheme: theme }, location.origin); });
+`;
+fs.writeFileSync(path.join(app, 'app.js'), appJs);
 for (const f of ['three.module.js', 'OrbitControls.js', 'fflate.js', 'earcut.js']) cp(`src/vendor/${f}`, path.join(app, 'vendor', f));
 cp('build/icon.png', path.join(app, 'icon.png'));
 cp('site/web.css', path.join(app, 'web.css'));

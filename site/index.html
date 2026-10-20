@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lumi · Lithophane and 3D Model Maker</title>
-  <meta name="description" content="Lumi turns photos into 3D-printable lithophanes (flat panels, curved frames, lamps and moon globes) with slicer-friendly exports. Try the lithophane maker free in your browser.">
+  <meta name="description" content="Lumi turns photos into 3D-printable lithophanes and full 3D models, with slicer-friendly exports. Try the lithophane maker free in your browser; nothing is uploaded.">
   <link rel="canonical" href="https://chahatdeep.github.io/Lumi/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Lumi">
@@ -14,160 +14,218 @@
   <meta property="og:image" content="https://chahatdeep.github.io/Lumi/og-card.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Lumi: Photos that glow. A backlit lithophane of a smiling moon.">
+  <meta property="og:image:alt" content="Lumi: Photos that glow. A real-light render of a backlit 3D-printed portrait lithophane.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Lumi · Lithophane and 3D Model Maker">
   <meta name="twitter:description" content="Turn any photo into a glowing, 3D-printable lithophane. Runs in your browser; nothing is uploaded.">
   <meta name="twitter:image" content="https://chahatdeep.github.io/Lumi/og-card.png">
-  <meta name="theme-color" content="#0d0b10">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <script>
+    // apply the saved theme before first paint (shared with the embedded app: 'lumi.theme')
+    (function () {
+      var t = 'system';
+      try { t = JSON.parse(localStorage.getItem('lumi.theme')) || 'system'; } catch (e) {}
+      var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.dataset.themePref = t;
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header class="nav">
-    <a class="nav-brand" href="#top"><img src="assets/icon.png" alt="">Lumi</a>
-    <nav class="nav-links">
-      <a href="#make">Make one</a>
-      <a href="#features">Features</a>
-      <a href="#desktop">Desktop app</a>
-      <a href="#license">License</a>
-    </nav>
-    <a class="btn btn-ghost nav-gh" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-    </a>
-  </header>
+  <nav class="nav" aria-label="Lumi">
+    <div class="nav-in">
+      <a class="nav-brand" href="#top"><img src="assets/icon.png" alt="">Lumi</a>
+      <div class="nav-links">
+        <a href="#real">Real light</a>
+        <a href="#make">Make one</a>
+        <a href="#features">Features</a>
+        <a href="#full3d">Full 3D</a>
+        <a href="#license">License</a>
+      </div>
+      <div class="nav-actions">
+        <button class="theme-btn" id="themeBtn" type="button" aria-label="Theme">
+          <svg class="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 000-17z" fill="currentColor"/></svg>
+          <svg class="i-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+          <svg class="i-dark" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
+        </button>
+        <a class="pill pill-sm" href="#make">Try it free</a>
+      </div>
+    </div>
+  </nav>
 
   <main id="top">
     <!-- ============ hero ============ -->
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Lithophane &amp; 3D model maker</p>
-        <h1>Photos that <span class="glow-word">glow</span>.</h1>
-        <p class="lead">Lumi turns any picture into a 3D-printable lithophane: a thin sheet of plastic that shows your photo when light shines through it. Make flat panels, curved frames, lamps and moon globes, and export meshes your slicer opens instantly.</p>
-        <div class="cta">
-          <a class="btn btn-primary" href="#make">Make a lithophane, free</a>
-          <a class="btn btn-ghost" href="#desktop">Get the desktop app</a>
-        </div>
-        <ul class="hero-points">
-          <li>Runs in your browser</li>
-          <li>Photos never leave your device</li>
-          <li>STL · 3MF · OBJ · PLY</li>
-        </ul>
+    <header class="hero">
+      <p class="hero-kicker">Lumi</p>
+      <h1>Photos that <span class="glow">glow.</span></h1>
+      <p class="hero-sub">Turn any photo into a 3D-printable lithophane, or a full 3D model. Free, in your browser.</p>
+      <div class="hero-cta">
+        <a class="pill" href="#make">Make a lithophane</a>
+        <a class="more" href="#full3d">See full 3D <span aria-hidden="true">›</span></a>
       </div>
 
-      <figure class="litho" id="litho">
-        <div class="litho-frame">
-          <canvas id="lithoCanvas" width="600" height="450" aria-label="A lithophane preview of the Lumi demo picture"></canvas>
-          <div class="litho-sheen"></div>
+      <figure class="stage" id="litho">
+        <div class="stage-img">
+          <img src="media/litho-off.jpg" alt="A white 3D-printed lithophane on a wooden desk in daylight, lamp off" width="1600" height="1200">
+          <img id="lithoOn" src="media/litho-on.jpg" alt="The same lithophane backlit by a warm lamp, revealing a portrait of Novak Djokovic" width="1600" height="1200">
         </div>
-        <figcaption>
-          <label class="lamp">
-            <span class="lamp-label">Lamp</span>
-            <input type="range" id="lampSlider" min="0" max="100" value="100" aria-label="Lamp brightness">
+        <figcaption class="lamp-bar">
+          <label class="switch">
+            <input type="checkbox" id="lampSwitch" checked>
+            <span class="track"><span class="knob"></span></span>
+            <span class="switch-label">Lamp</span>
           </label>
-          <span class="litho-hint" id="lithoHint">Drag to dim the lamp and see the bare relief</span>
+          <input type="range" id="lampSlider" min="0" max="100" value="100" aria-label="Lamp brightness">
         </figcaption>
       </figure>
+      <p class="fine">Not a photo of a print: a Lumi mesh rendered with physically based light in Blender Cycles.</p>
+    </header>
+
+    <!-- ============ real light ============ -->
+    <section class="section alt" id="real">
+      <div class="wrap">
+        <h2 class="headline">Shaped by thickness.<br><span class="muted">Revealed by light.</span></h2>
+        <p class="lede">A lithophane is a thin sheet that's thicker where the photo is dark. In daylight it's a plain white relief. Put a lamp behind it and the portrait appears, with every tone made by light passing through plastic.</p>
+        <div class="duo">
+          <figure class="tile tile-photo"><img src="media/litho-off.jpg" alt="Lithophane in daylight, lamp off" loading="lazy" width="1600" height="1200"><figcaption>Lamp off</figcaption></figure>
+          <figure class="tile tile-photo"><img src="media/litho-on.jpg" alt="Lithophane backlit, lamp on" loading="lazy" width="1600" height="1200"><figcaption>Lamp on</figcaption></figure>
+        </div>
+      </div>
     </section>
 
     <!-- ============ tool ============ -->
     <section class="section" id="make">
-      <div class="section-head">
-        <p class="eyebrow">Try it now</p>
-        <h2>Make your lithophane</h2>
-        <p>This is the real Lumi lithophane engine, running entirely in your browser. Drop in a photo, shape it, then export an STL. Your image is never uploaded anywhere.</p>
+      <div class="wrap">
+        <h2 class="headline">Make yours.<br><span class="muted">Right here, right now.</span></h2>
+        <p class="lede">This is the real Lumi lithophane engine, running entirely in your browser. Drop in a photo, shape it, then download an STL or 3MF. Your image never leaves your device.</p>
       </div>
-      <div class="app-shell">
-        <div class="app-bar">
+      <div class="device">
+        <div class="device-bar">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span class="app-title">Lumi · lithophane maker</span>
-          <a class="app-full" href="app/" target="_blank" rel="noopener">Open full screen ↗</a>
+          <span class="device-title">Lumi · lithophane maker</span>
+          <a class="device-full" href="app/" target="_blank" rel="noopener">Open full screen ↗</a>
         </div>
         <iframe id="appFrame" src="app/" title="Lumi lithophane maker" loading="lazy" allow="clipboard-read; clipboard-write"></iframe>
       </div>
-      <ol class="steps">
-        <li><b>Image</b><span>Open, drop or paste (Ctrl+V) a photo, or start from a quick template.</span></li>
-        <li><b>Edit</b><span>Crop, rotate, tune levels and contrast, and add text.</span></li>
-        <li><b>Model</b><span>Pick a shape, size, thickness and outline, then add a frame, stand or hanger.</span></li>
-        <li><b>Export</b><span>Download an optimized STL or 3MF and print it with 100% infill.</span></li>
-      </ol>
+      <div class="wrap">
+        <ol class="steps">
+          <li><b>Image</b><span>Open, drop or paste a photo, or pick a quick template.</span></li>
+          <li><b>Edit</b><span>Crop, rotate, tune levels and contrast, and add text.</span></li>
+          <li><b>Model</b><span>Choose a shape, size, thickness, outline, frame and stand.</span></li>
+          <li><b>Export</b><span>Download an optimized STL or 3MF and print with 100% infill.</span></li>
+        </ol>
+      </div>
     </section>
 
     <!-- ============ features ============ -->
-    <section class="section" id="features">
-      <div class="section-head">
-        <p class="eyebrow">Features</p>
-        <h2>Everything a good lithophane needs</h2>
-      </div>
-      <div class="grid">
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M4 6c5-3 11-3 16 0v12c-5-3-11-3-16 0z"/></svg></div>
-          <h3>Five shapes</h3>
-          <p>Flat panels, curved frames, cylinder lamps, n-sided prism lamps and moon globes with top and bottom openings.</p>
-        </article>
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg></div>
-          <h3>Outlines &amp; frames</h3>
-          <p>Rectangle, rounded, oval, heart, hexagon, octagon, star or arch, with beveled, flat or rounded frames.</p>
-        </article>
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9V16h7v-2.1A6 6 0 0012 3z"/></svg></div>
-          <h3>Ready-made accessories</h3>
-          <p>Stand and base, hanging loop, nightlight holder, lamp fitting and connectors, built into the same watertight mesh.</p>
-        </article>
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 4v6M8 14v6"/></svg></div>
-          <h3>Photo editing built in</h3>
-          <p>Crop, rotate, auto levels, brightness, contrast, gamma, shadows and highlights, smoothing, sharpening, edge fade, invert, and text.</p>
-        </article>
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></div>
-          <h3>Light-accurate thickness</h3>
-          <p>Choose a linear or light-accurate tone curve and set the filament opacity, then preview the print backlit before you print.</p>
-        </article>
-        <article class="feat">
-          <div class="feat-ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></div>
-          <h3>Slicer-friendly exports</h3>
-          <p>A QEM optimizer merges triangles in flat and smooth areas with a capped triangle count, so the mesh stays watertight and loads instantly.</p>
-        </article>
-      </div>
-
-      <div class="stats">
-        <div><b>&lt; 1M</b><span>triangles per export<br>(600k by default)</span></div>
-        <div><b>0.02 mm</b><span>default optimizer tolerance,<br>far below a 0.4 mm nozzle</span></div>
-        <div><b>5</b><span>formats: STL, ASCII STL,<br>3MF, OBJ, PLY</span></div>
-        <div><b>0</b><span>uploads. Everything runs<br>on your device</span></div>
+    <section class="section alt" id="features">
+      <div class="wrap">
+        <h2 class="headline">Everything a lithophane needs.</h2>
+        <div class="bento">
+          <article class="tile b-wide">
+            <p class="eyebrow">Shapes</p>
+            <h3>Flat, curved, cylinder, prism and globe.</h3>
+            <p>From a framed photo to a hexagon lamp or a moon globe with top and bottom openings.</p>
+            <div class="chips"><span>Flat</span><span>Curved</span><span>Cylinder</span><span>Prism</span><span>Globe</span></div>
+          </article>
+          <article class="tile b-stat">
+            <p class="eyebrow">Slicer-friendly</p>
+            <p class="big">&lt;1M</p>
+            <p>triangles per export, 600k by default. Watertight meshes open instantly in Bambu Studio, PrusaSlicer, OrcaSlicer and Cura.</p>
+          </article>
+          <article class="tile">
+            <p class="eyebrow">Outlines &amp; frames</p>
+            <h3>Eight outlines. Four frames.</h3>
+            <p>Rectangle, rounded, oval, heart, hexagon, octagon, star or arch, with a beveled, flat or rounded frame.</p>
+          </article>
+          <article class="tile">
+            <p class="eyebrow">Accessories</p>
+            <h3>Ready to stand, hang or glow.</h3>
+            <p>A stand, hanging loop, nightlight holder, lamp fitting and connectors, built into the same mesh.</p>
+          </article>
+          <article class="tile">
+            <p class="eyebrow">Tone</p>
+            <h3>Light-accurate thickness.</h3>
+            <p>A linear or light-accurate curve, filament opacity, and a backlit preview before you print.</p>
+          </article>
+          <article class="tile b-wide">
+            <p class="eyebrow">Photo editing</p>
+            <h3>Fix the photo without leaving Lumi.</h3>
+            <p>Crop, rotate, auto levels, brightness, contrast, gamma, shadows and highlights, smoothing, sharpening, edge fade, invert and text.</p>
+          </article>
+          <article class="tile b-stat">
+            <p class="eyebrow">Private</p>
+            <p class="big">0</p>
+            <p>uploads. Everything runs on your device.</p>
+          </article>
+          <article class="tile b-stat">
+            <p class="eyebrow">Formats</p>
+            <p class="big">5</p>
+            <p>STL, ASCII STL, 3MF, OBJ and PLY.</p>
+          </article>
+          <article class="tile b-stat">
+            <p class="eyebrow">Precision</p>
+            <p class="big">0.02<small>mm</small></p>
+            <p>default optimizer tolerance, far finer than a 0.4 mm nozzle.</p>
+          </article>
+        </div>
       </div>
     </section>
 
-    <!-- ============ desktop ============ -->
-    <section class="section" id="desktop">
-      <div class="section-head">
-        <p class="eyebrow">Desktop app · Windows</p>
-        <h2>More in the desktop app: Pop 3D</h2>
-        <p>The Windows app has everything above, plus <b>Pop 3D</b>, which turns a single photo into a printable 3D model. Use an AI depth relief, or full 3D generation on your own NVIDIA GPU (Hunyuan3D-2, offline) or through free Hugging Face Spaces. It can also repair and optimize an existing STL, OBJ or GLB.</p>
-      </div>
-
-      <div class="gallery">
-        <button class="shot" data-src="assets/screenshot-main.png"><img src="assets/screenshot-main.png" alt="Lumi main window with a lithophane preview" loading="lazy"><span>Image &amp; quick templates</span></button>
-        <button class="shot" data-src="assets/screenshot-model.png"><img src="assets/screenshot-model.png" alt="Lumi Model tab: shapes, thickness and outlines" loading="lazy"><span>Shape, thickness &amp; frame</span></button>
-        <button class="shot" data-src="assets/screenshot-export.png"><img src="assets/screenshot-export.png" alt="Lumi Export tab with mesh optimization settings" loading="lazy"><span>Slicer-friendly export</span></button>
-        <button class="shot" data-src="assets/screenshot-pop.png"><img src="assets/screenshot-pop.png" alt="Lumi Pop 3D tab: image to 3D model" loading="lazy"><span>Pop 3D (desktop only)</span></button>
-      </div>
-
-      <div class="build">
-        <div>
-          <h3>Build &amp; run it</h3>
-          <p>You need Windows 10 or 11, <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js 20+</a> and Git. An NVIDIA GPU is optional, for offline Pop 3D.</p>
-          <p><code>npm run dist</code> creates an installer and a portable <code>.exe</code> in <code>dist/</code>. The <a href="https://github.com/chahatdeep/Lumi#troubleshooting-and-build-gotchas" target="_blank" rel="noopener">README</a> covers troubleshooting and build gotchas.</p>
-          <a class="btn btn-primary" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">View on GitHub</a>
+    <!-- ============ full 3D ============ -->
+    <section class="section dark-band" id="full3d">
+      <div class="wrap">
+        <p class="eyebrow center">Pop 3D · Desktop app</p>
+        <h2 class="headline">One photo in.<br><span class="glow">A full 3D model out.</span></h2>
+        <p class="lede">Lumi for Windows goes beyond lithophanes. Pop 3D builds a complete, printable 3D model from a single photo, on your own NVIDIA GPU and offline. It then repairs it, gives it a flat base and optimizes it for your slicer.</p>
+        <div class="duo duo-bust">
+          <figure class="tile tile-photo">
+            <img class="only-light" src="media/bust-light-34.jpg" alt="Full 3D bust generated by Lumi from the same photo, studio render" loading="lazy" width="1600" height="1200">
+            <img class="only-dark" src="media/bust-dark-34.jpg" alt="Full 3D bust generated by Lumi from the same photo, studio render" loading="lazy" width="1600" height="1200">
+          </figure>
+          <figure class="tile tile-photo">
+            <img class="only-light" src="media/bust-light-side.jpg" alt="The same 3D bust from a 45 degree angle" loading="lazy" width="1600" height="1200">
+            <img class="only-dark" src="media/bust-dark-side.jpg" alt="The same 3D bust from a 45 degree angle" loading="lazy" width="1600" height="1200">
+          </figure>
         </div>
-        <div class="code" role="group" aria-label="Build commands">
-          <button class="copy" type="button" data-copy>Copy</button>
+        <div class="specs">
+          <div><b>238 s</b><span>generated on an RTX 5080 with Hunyuan3D-2</span></div>
+          <div><b>815k → 231k</b><span>faces, repaired and optimized by Lumi</span></div>
+          <div><b>90 mm</b><span>tall, watertight, flat base, ready to print</span></div>
+        </div>
+        <p class="fine center">Rendered in Blender Cycles from the exported STL with 0.12 mm layer lines. Also available online through free Hugging Face Spaces (Hunyuan3D-2/2.1, TRELLIS).</p>
+      </div>
+    </section>
+
+    <!-- ============ desktop app ============ -->
+    <section class="section" id="desktop">
+      <div class="wrap">
+        <h2 class="headline">Lumi for Windows.</h2>
+        <p class="lede">Everything above, plus Pop 3D, depth reliefs and mesh repair, in a native desktop app.</p>
+      </div>
+      <div class="rail" tabindex="0" aria-label="Screenshots">
+        <button class="shot" data-src="assets/screenshot-main.png"><img src="assets/screenshot-main.png" alt="Lumi main window with a lithophane preview" loading="lazy"><span>Image &amp; templates</span></button>
+        <button class="shot" data-src="assets/screenshot-model.png"><img src="assets/screenshot-model.png" alt="Lumi Model tab" loading="lazy"><span>Shape, thickness &amp; frame</span></button>
+        <button class="shot" data-src="assets/screenshot-export.png"><img src="assets/screenshot-export.png" alt="Lumi Export tab" loading="lazy"><span>Slicer-friendly export</span></button>
+        <button class="shot" data-src="assets/screenshot-pop.png"><img src="assets/screenshot-pop.png" alt="Lumi Pop 3D tab" loading="lazy"><span>Pop 3D</span></button>
+      </div>
+      <div class="wrap">
+        <div class="build tile">
+          <div>
+            <h3>Build and run it.</h3>
+            <p>Needs Windows 10 or 11, <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js 20+</a> and Git. An NVIDIA GPU is optional, for offline Pop 3D. <code>npm run dist</code> creates an installer and a portable <code>.exe</code>.</p>
+            <a class="more" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">View on GitHub <span aria-hidden="true">›</span></a>
+          </div>
+          <div class="code">
+            <button class="copy" type="button" data-copy>Copy</button>
 <pre><code><span class="c"># get the code</span>
 git clone https://github.com/chahatdeep/Lumi.git
 cd Lumi
@@ -176,49 +234,52 @@ npm install
 <span class="c"># run it</span>
 npm start
 
-<span class="c"># build the Windows installer + portable exe</span>
+<span class="c"># Windows installer + portable exe</span>
 npm run dist</code></pre>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- ============ tips ============ -->
-    <section class="section tips">
-      <div class="section-head">
-        <p class="eyebrow">Print tips</p>
-        <h2>Getting a great print</h2>
-      </div>
-      <div class="tip-grid">
-        <div><b>100% infill</b><span>The walls are the image.</span></div>
-        <div><b>0.08–0.12 mm layers</b><span>Thinner layers give smoother tones.</span></div>
-        <div><b>White PLA</b><span>Then match <i>Filament opacity</i> in Lumi.</span></div>
-        <div><b>Print upright</b><span>Gives the smoothest tones. Add a 5 mm brim for tall prints.</span></div>
-        <div><b>Slow outer walls</b><span>Around 40 mm/s to avoid wobble.</span></div>
-        <div><b>Backlight it</b><span>A warm LED behind the print brings the photo to life.</span></div>
+    <section class="section alt">
+      <div class="wrap">
+        <h2 class="headline">Print it beautifully.</h2>
+        <div class="tips">
+          <div><b>100% infill</b><span>The walls are the image.</span></div>
+          <div><b>0.08–0.12 mm</b><span>Thinner layers give smoother tones.</span></div>
+          <div><b>White PLA</b><span>Match <i>Filament opacity</i> in Lumi.</span></div>
+          <div><b>Print upright</b><span>For the smoothest tones. Add a 5 mm brim.</span></div>
+          <div><b>40 mm/s walls</b><span>Slow outer walls avoid wobble.</span></div>
+          <div><b>Warm LED</b><span>Backlight it to bring the photo to life.</span></div>
+        </div>
       </div>
     </section>
 
     <!-- ============ license ============ -->
     <section class="section" id="license">
-      <div class="license">
-        <div>
-          <p class="eyebrow">License</p>
-          <h2>Free for non-commercial use</h2>
-          <p>Lumi is source-available under the <a href="https://github.com/chahatdeep/Lumi/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Noncommercial License 1.0.0</a>. Use, modify and share it for personal, hobby, educational and research projects.</p>
-          <p><b>Commercial use needs a separate license.</b> That includes selling the software, using it in a business or selling prints made with it commercially. Please get in touch.</p>
+      <div class="wrap narrow center">
+        <h2 class="headline">Free for non-commercial use.</h2>
+        <p class="lede">Lumi is source-available under the <a href="https://github.com/chahatdeep/Lumi/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Noncommercial License 1.0.0</a>. Use, change and share it for personal, hobby, educational and research projects. Commercial use, including selling the software, using it in a business or selling prints commercially, needs a separate license.</p>
+        <div class="hero-cta">
+          <a class="pill" href="https://github.com/chahatdeep" target="_blank" rel="noopener">Contact for commercial licensing</a>
+          <a class="more" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">Source on GitHub <span aria-hidden="true">›</span></a>
         </div>
-        <a class="btn btn-primary" href="https://github.com/chahatdeep" target="_blank" rel="noopener">Contact for commercial licensing</a>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <span><img src="assets/icon.png" alt=""> Lumi · © 2026 Chahat Deep Singh</span>
-    <span><a href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/chahatdeep/Lumi/blob/main/LICENSE" target="_blank" rel="noopener">License</a> · <a href="app/">Full-screen maker</a></span>
+    <div class="wrap">
+      <p>Demo photo: <a href="https://commons.wikimedia.org/wiki/File:Novak_Djokovic_(34775891004)_(cropped).jpg" target="_blank" rel="noopener">“Novak Djokovic”</a> by Andrew Campbell, <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noopener">CC BY 2.0</a>. It was cropped, turned into a lithophane and a 3D model, and rendered. Lumi is not affiliated with or endorsed by Novak Djokovic.</p>
+      <div class="foot-row">
+        <span>© 2026 Chahat Deep Singh. Lumi is licensed under PolyForm Noncommercial 1.0.0.</span>
+        <span><a href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/chahatdeep/Lumi/blob/main/LICENSE" target="_blank" rel="noopener">License</a> · <a href="app/">Full-screen maker</a></span>
+      </div>
+    </div>
   </footer>
 
   <dialog class="lightbox" id="lightbox"><img alt=""><button type="button" aria-label="Close">×</button></dialog>
-
   <script type="module" src="site.js"></script>
 </body>
 </html>

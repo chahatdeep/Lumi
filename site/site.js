@@ -58,15 +58,35 @@ else {
 
 // ---------------------------------------------------------------- reveal on scroll
 const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -10% 0px' });
-document.querySelectorAll('.headline, .lede, .tile, .steps li, .specs div, .shot, .tips div').forEach((n) => { n.classList.add('reveal'); io.observe(n); });
+document.querySelectorAll('.headline, .lede, .tile, .steps li, .specs div, .showcase, .tips div').forEach((n) => { n.classList.add('reveal'); io.observe(n); });
 
-// ---------------------------------------------------------------- screenshot lightbox
+// ---------------------------------------------------------------- desktop showcase + lightbox
+const tabs = [...document.querySelectorAll('.seg button')];
+const shots = [...document.querySelectorAll('#showFrame img')];
+const cap = document.getElementById('showCap');
+let cur = 0, auto = null;
+function show(i) {
+  cur = (i + shots.length) % shots.length;
+  shots.forEach((im, k) => im.classList.toggle('on', k === cur));
+  tabs.forEach((t, k) => t.setAttribute('aria-selected', String(k === cur)));
+  cap.textContent = shots[cur].dataset.cap;
+}
+const stopAuto = () => { clearInterval(auto); auto = null; };
+tabs.forEach((t, k) => t.addEventListener('click', () => { stopAuto(); show(k); }));
+document.querySelector('.seg').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { stopAuto(); show(cur + (e.key === 'ArrowRight' ? 1 : -1)); tabs[cur].focus(); }
+});
+// gently cycle until the visitor picks one
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  new IntersectionObserver(([e], o) => { if (e.isIntersecting) { auto = setInterval(() => show(cur + 1), 4500); o.disconnect(); } }, { threshold: 0.5 }).observe(document.getElementById('showFrame'));
+}
 const lb = document.getElementById('lightbox');
-document.querySelectorAll('.shot').forEach((b) => b.addEventListener('click', () => {
-  lb.querySelector('img').src = b.dataset.src;
-  lb.querySelector('img').alt = b.querySelector('img').alt;
+document.getElementById('showFrame').addEventListener('click', () => {
+  stopAuto();
+  lb.querySelector('img').src = shots[cur].src;
+  lb.querySelector('img').alt = shots[cur].alt;
   lb.showModal();
-}));
+});
 lb.addEventListener('click', () => lb.close());
 
 // ---------------------------------------------------------------- copy build commands

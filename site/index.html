@@ -49,6 +49,7 @@
         <a href="#make">Make one</a>
         <a href="#features">Features</a>
         <a href="#full3d">Full 3D</a>
+        <a href="#download">Download</a>
         <a href="#license">License</a>
       </div>
       <div class="nav-actions">
@@ -57,7 +58,7 @@
           <svg class="i-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
           <svg class="i-dark" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
         </button>
-        <a class="pill pill-sm" href="#make">Try it free</a>
+        <a class="pill pill-sm" href="#download">Download</a>
       </div>
     </div>
   </nav>
@@ -72,6 +73,24 @@
       <div class="hero-cta">
         <a class="pill" href="#make">Make a lithophane</a>
         <a class="more" href="#full3d">See full 3D <span aria-hidden="true">›</span></a>
+      </div>
+
+      <div class="dl" id="download">
+        <div class="dl-card">
+          <div class="dl-info">
+            <img src="assets/icon.png" alt="" width="44" height="44">
+            <div><b>Lumi for Windows</b><span>v1.0.0 · Windows 10 and 11, 64-bit · includes Pop 3D</span></div>
+          </div>
+          <div class="dl-btns">
+            <a class="pill dl-btn" href="https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-Setup-1.0.0.exe" data-asset="Lumi-Setup-1.0.0.exe">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>Installer <small>.exe</small>
+            </a>
+            <a class="pill pill-ghost dl-btn" href="https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-1.0.0-portable.exe" data-asset="Lumi-1.0.0-portable.exe">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>Portable <small>.exe</small>
+            </a>
+          </div>
+        </div>
+        <p class="fine dl-note">About 96 MB each. The portable version runs without installing. The app isn't code-signed yet, so if Windows SmartScreen appears, choose <b>More info → Run anyway</b>. <a href="https://github.com/chahatdeep/Lumi/releases/latest" target="_blank" rel="noopener">All releases</a></p>
       </div>
 
       <figure class="stage" id="litho">
@@ -213,18 +232,30 @@
         <h2 class="headline">Lumi for Windows.</h2>
         <p class="lede">Everything above, plus Pop 3D, depth reliefs and mesh repair, in a native desktop app.</p>
       </div>
-      <div class="rail" tabindex="0" aria-label="Screenshots">
-        <button class="shot" data-src="assets/screenshot-main.png"><img src="assets/screenshot-main.png" alt="Lumi main window with a lithophane preview" loading="lazy"><span>Image &amp; templates</span></button>
-        <button class="shot" data-src="assets/screenshot-model.png"><img src="assets/screenshot-model.png" alt="Lumi Model tab" loading="lazy"><span>Shape, thickness &amp; frame</span></button>
-        <button class="shot" data-src="assets/screenshot-export.png"><img src="assets/screenshot-export.png" alt="Lumi Export tab" loading="lazy"><span>Slicer-friendly export</span></button>
-        <button class="shot" data-src="assets/screenshot-pop.png"><img src="assets/screenshot-pop.png" alt="Lumi Pop 3D tab" loading="lazy"><span>Pop 3D</span></button>
+      <div class="wrap showcase">
+        <div class="seg" role="tablist" aria-label="Screenshots">
+          <button type="button" role="tab" aria-selected="true" data-i="0">Image</button>
+          <button type="button" role="tab" aria-selected="false" data-i="1">Model</button>
+          <button type="button" role="tab" aria-selected="false" data-i="2">Export</button>
+          <button type="button" role="tab" aria-selected="false" data-i="3">Pop 3D</button>
+        </div>
+        <figure class="show-frame" id="showFrame">
+          <img class="on" src="assets/screenshot-main.png" alt="Lumi main window with a lithophane preview" data-cap="Load a photo or pick a quick template." loading="lazy" width="1480" height="920">
+          <img class="" src="assets/screenshot-model.png" alt="Lumi Model tab with shape and thickness settings" data-cap="Shape, thickness, outline and frame." loading="lazy" width="1480" height="920">
+          <img class="" src="assets/screenshot-export.png" alt="Lumi Export tab with mesh optimization" data-cap="Optimized, slicer-friendly STL and 3MF." loading="lazy" width="1480" height="920">
+          <img class="" src="assets/screenshot-pop.png" alt="Lumi Pop 3D tab showing a generated 3D bust" data-cap="A full 3D model from one photo, on your GPU." loading="lazy" width="1480" height="920">
+        </figure>
+        <p class="show-cap" id="showCap">Load a photo or pick a quick template.</p>
       </div>
       <div class="wrap">
         <div class="build tile">
           <div>
             <h3>Build and run it.</h3>
             <p>Needs Windows 10 or 11, <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js 20+</a> and Git. An NVIDIA GPU is optional, for offline Pop 3D. <code>npm run dist</code> creates an installer and a portable <code>.exe</code>.</p>
-            <a class="more" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">View on GitHub <span aria-hidden="true">›</span></a>
+            <div class="build-links">
+              <a class="pill pill-sm" href="#download">Download the .exe</a>
+              <a class="more" href="https://github.com/chahatdeep/Lumi" target="_blank" rel="noopener">View on GitHub <span aria-hidden="true">›</span></a>
+            </div>
           </div>
           <div class="code">
             <button class="copy" type="button" data-copy>Copy</button>

@@ -45,7 +45,8 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "Lumi"
+      "shortcutName": "Lumi",
+      "artifactName": "Lumi-Setup-${version}.exe"
     },
     "portable": {
       "artifactName": "Lumi-${version}-portable.exe"

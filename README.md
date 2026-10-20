@@ -35,6 +35,15 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 |---|---|---|
 | ![Model tab](docs/screenshot-model.png) | ![Export tab](docs/screenshot-export.png) | ![Pop 3D tab](docs/screenshot-pop.png) |
 
+## Download (Windows)
+
+| | |
+|---|---|
+| **Installer** | [Lumi-Setup-1.0.0.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-Setup-1.0.0.exe). Choose where to install; it adds a Start menu shortcut. |
+| **Portable** | [Lumi-1.0.0-portable.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-1.0.0-portable.exe). A single file that runs without installing. |
+
+These run on Windows 10 and 11 (64-bit). All versions are on the [Releases](https://github.com/chahatdeep/Lumi/releases) page. The app isn't code-signed yet, so if Windows SmartScreen appears, choose **More info → Run anyway**.
+
 ## Requirements
 
 - Windows 10 or 11 (64-bit). The packaging targets Windows. The app itself is plain Electron and may run elsewhere in dev mode, but only Windows is tested.

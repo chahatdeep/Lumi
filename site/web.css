@@ -1,0 +1,31 @@
+/* Browser build of Lumi: lithophane maker only. Loaded after styles.css. */
+
+/* Pop 3D needs the desktop app (local GPU / AI runtimes) */
+.tabs .pop-tab, .tabs .tab-sep { display: none; }
+
+/* no window controls to leave room for */
+.titlebar { padding-right: 14px; -webkit-app-region: no-drag; }
+
+.web-link {
+  display: inline-flex; align-items: center; height: 30px; padding: 0 12px;
+  border-radius: 9px; border: 1px solid var(--border);
+  color: var(--muted); text-decoration: none; font-weight: 600; font-size: 12px;
+}
+.web-link:hover { color: var(--text); border-color: var(--accent); }
+
+/* narrow screens: stack the 3D view above the settings */
+@media (max-width: 860px) {
+  body { grid-template-rows: auto 1fr 28px; }
+  .titlebar { grid-template-columns: 1fr auto; gap: 8px; padding: 8px 10px; }
+  .brand .tag { display: none; }
+  .tabs { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; overflow-x: auto; }
+  .tabs button { padding: 6px 10px; flex: 1; justify-content: center; }
+  main { grid-template-columns: 1fr; grid-template-rows: 42vh 1fr; }
+  .stage { order: -1; }
+  .panel { padding: 8px 10px 16px; }
+  .stage-bar .tools-3d { flex-wrap: wrap; }
+}
+@media (max-width: 520px) {
+  .tabs button { padding: 6px 6px; font-size: 12px; gap: 4px; }
+  .web-link { padding: 0 8px; }
+}

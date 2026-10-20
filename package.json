@@ -10,7 +10,8 @@
     "start": "node build/vendor.js && electron .",
     "vendor": "node build/vendor.js",
     "icon": "node build/make-icon.js",
-    "dist": "node build/vendor.js && electron-builder --win nsis portable"
+    "dist": "node build/vendor.js && electron-builder --win nsis portable",
+    "site": "node build/vendor.js && node build/site.js"
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.3.1",
@@ -60,7 +61,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chahatdeep/lumi.git"
+    "url": "https://github.com/chahatdeep/Lumi.git"
   },
-  "homepage": "https://github.com/chahatdeep/lumi"
+  "homepage": "https://chahatdeep.github.io/Lumi/"
 }

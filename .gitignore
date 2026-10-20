@@ -30,3 +30,9 @@ desktop.ini
 # editor
 .vscode/
 .idea/
+
+# GitHub Pages build output
+_site/
+
+# local tooling
+.claude/

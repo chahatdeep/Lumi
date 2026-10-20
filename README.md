@@ -2,6 +2,8 @@
 
 Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into **3D-printable lithophanes** and **3D models**. It also keeps every export **slicer-friendly**: meshes are watertight and optimized to stay well under 1 million triangles, so Bambu Studio, PrusaSlicer, OrcaSlicer, Creality Print and Cura load them instantly.
 
+**🌐 Website and in-browser lithophane maker: <https://chahatdeep.github.io/Lumi/>.** It runs entirely client-side, so your photos are never uploaded.
+
 ![Lumi main window](docs/screenshot-main.png)
 
 ## Features
@@ -46,8 +48,8 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 ## Install
 
 ```bash
-git clone https://github.com/chahatdeep/lumi.git
-cd lumi
+git clone https://github.com/chahatdeep/Lumi.git
+cd Lumi
 npm install
 ```
 
@@ -76,6 +78,17 @@ This writes to `dist/`:
 - `win-unpacked/`, the unpacked app.
 
 To regenerate the app icon (`build/icon.png`), run `npm run icon`.
+
+## Website (GitHub Pages)
+
+The website at <https://chahatdeep.github.io/Lumi/> contains a landing page (`site/`) and a browser build of the lithophane maker. The maker is Lumi's own renderer (`src/`), with the desktop-only Pop 3D tab hidden. That means the web and desktop apps produce the same meshes.
+
+```bash
+npm run site                                # assembles _site/
+python -m http.server 8080 --directory _site   # then open http://localhost:8080
+```
+
+Every push to `main` builds and deploys it through `.github/workflows/pages.yml`.
 
 ## How to use
 
@@ -117,7 +130,8 @@ local3d.js         Installs and runs the local GPU Hunyuan3D-2 worker
 python/            lumi_local3d.py, the local GPU worker (JSON over stdin/stdout)
 src/               Renderer: UI (app.js, ui.js), mesh generation (mesh.js, layout.js),
                    simplifier (simplify.js), exporters, image processing, Pop 3D, viewer
-build/             vendor.js (copies runtime libs), make-icon.js, icon.png
+build/             vendor.js (copies runtime libs), make-icon.js, icon.png, site.js (website build)
+site/              Website landing page and the browser-only style overrides
 ```
 
 ## Troubleshooting and build gotchas

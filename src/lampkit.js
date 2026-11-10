@@ -2,6 +2,7 @@
 // round LED puck (default: Bambu Lab LED Lamp Kit 001, D59 x 8 mm).
 //   walls  mitred edges joined by sliding dovetails (rail on the right edge, channel on the left edge)
 //   base   LED pocket, cable slot at the back, finger notch at the front, and a groove the wall bottoms drop into
+//   top    an N-sided lithophane lid; the wall tops drop into a groove on its underside, locking the ring at both ends
 // Geometry is exact CSG (manifold-3d); every part comes out watertight. Units: mm, Z up.
 // Wall k faces angle -90 + 360k/N (k = 0 is the front, k = 1 is to its right seen from outside).
 
@@ -16,6 +17,10 @@ const BB = 8.0;           // bottom band (4 visible + groove depth hidden)
 const ROOT_W = 2.4, TIP_W = 3.4, DEPTH = 1.8;   // dovetail rail
 const G_DEPTH = 4.0, FLOOR = 2.0, BASE_WALL = 4.0;
 const OPAQUE = 50;
+const LID_G = 3.0;        // depth the wall tops sit in the lid groove (less than TB, so the photo stays clear)
+const LID_T = 3.6;        // lid plate thickness above the wall tops (>= the thickest lithophane pixel)
+const LID_RIM = 2.4;      // lid wall outside the groove
+const LID_PLUG = 2.0;     // inner locating ring inside the walls
 
 const rad = (d) => (d * Math.PI) / 180;
 const polar = (r, deg) => [r * Math.cos(rad(deg)), r * Math.sin(rad(deg))];
@@ -47,12 +52,20 @@ export function lampLayout(o) {
   sb = Math.max(sb, 5.5);
   const IW = W - 2 * sb, IH = o.windowH, HW = IH + TB + BB;
   const pocketTop = FLOOR + led.h + 2;
+  // lid photo: the N-gon opening inside the walls; the photo is cropped to the opening's bounding box
+  const Aw = A - TE - o.grooveClr - LID_PLUG;
+  const corners = Array.from({ length: N }, (_, k) => polar(Aw / cos, -90 + half + (360 / N) * k));
+  const tx0 = Math.min(...corners.map((c) => c[0])), tx1 = Math.max(...corners.map((c) => c[0]));
+  const ty0 = Math.min(...corners.map((c) => c[1])), ty1 = Math.max(...corners.map((c) => c[1]));
   return { N, half, tan, cos, W, minW, A, R, rj, sb, IW, IH, HW, led, pocketD, pocketTop, baseH: pocketTop + G_DEPTH,
-    clr, miter: o.miterClr, grooveClr: o.grooveClr, skins: best };
+    clr, miter: o.miterClr, grooveClr: o.grooveClr, skins: best,
+    Aw, top: { x0: tx0, x1: tx1, y0: ty0, y1: ty1, W: tx1 - tx0, H: ty1 - ty0 }, lidG: LID_G, lidT: LID_T,
+    lidA: A + o.grooveClr + LID_RIM, height: pocketTop + HW + LID_T };
 }
 
-/** Builds the lamp. thick[k]: Float32Array rows x cols of wall k's lithophane thickness (top row first). */
-export function buildLamp(M, L, thick, cols, rows) {
+/** Builds the lamp. thick[k]: Float32Array rows x cols of wall k's lithophane thickness (top row first).
+ *  top: { T, cols, rows } for the lid photo (top row = back of the lamp), or null for no lid. */
+export function buildLamp(M, L, thick, cols, rows, top = null) {
   const { Manifold, CrossSection, Mesh } = M;
   let trash = [];                                   // wasm objects to free; emptied after every part
   const keep = (x) => { trash.push(x); return x; };
@@ -128,7 +141,45 @@ export function buildLamp(M, L, thick, cols, rows) {
     return b;
   }
 
-  const out = { walls: [], base: null, report: { volumes: [], genus: [] } };
+  function lid(T, tc, tr) {
+    // lid frame: z = 0 is the wall tops; the groove runs from -LID_G to 0, the plate from 0 to LID_T
+    const outline = keep(keep(keep(new CrossSection([ngon(L.lidA)], 'EvenOdd')).offset(-6, 'Round', 2, 48)).offset(6, 'Round', 2, 48));
+    let b = keep(keep(outline.extrude(LID_G + LID_T)).translate([0, 0, -LID_G]));
+    const groove = keep(prism(ngon(L.A + L.grooveClr), -LID_G - 1, 0).subtract(prism(ngon(L.A - TE - L.grooveClr), -LID_G - 2, 1)));
+    b = keep(b.subtract(groove));
+    b = keep(b.subtract(prism(ngon(L.Aw), -LID_G - 1, LID_T + 1)));
+    // photo slab: flat outer face on top (z = LID_T), relief underneath, clipped to the opening
+    const ov = 0.6, nx = tc + 2, ny = tr + 2, P = L.top;
+    const x0 = P.x0 - ov, x1 = P.x1 + ov, y0 = P.y0 - ov, y1 = P.y1 + ov;
+    const n = nx * ny, pos = new Float32Array(n * 6);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const tj = Math.min(tr - 1, Math.max(0, j - 1)), ti = Math.min(tc - 1, Math.max(0, i - 1));
+      const t = Math.min(LID_T - 0.2, T[tj * tc + ti]), v = j * nx + i;
+      const x = x0 + ((x1 - x0) * i) / (nx - 1), y = y1 - ((y1 - y0) * j) / (ny - 1);
+      pos.set([x, y, LID_T - t], v * 3); pos.set([x, y, LID_T], (v + n) * 3);
+    }
+    const tris = [];
+    for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+      const a = j * nx + i, bb = a + 1, c = a + nx + 1, d = a + nx;
+      tris.push(a, bb, c, a, c, d, a + n, c + n, bb + n, a + n, d + n, c + n);
+    }
+    const ring = [];
+    for (let i = 0; i < nx; i++) ring.push(i);
+    for (let j = 1; j < ny; j++) ring.push(j * nx + nx - 1);
+    for (let i = nx - 2; i >= 0; i--) ring.push((ny - 1) * nx + i);
+    for (let j = ny - 2; j > 0; j--) ring.push(j * nx);
+    for (let k = 0; k < ring.length; k++) { const r0 = ring[k], r1 = ring[(k + 1) % ring.length]; tris.push(r0, r1 + n, r1, r0, r0 + n, r1 + n); }
+    const idx = Uint32Array.from(tris);
+    let slab = keep(new Manifold(new Mesh({ numProp: 3, vertProperties: pos, triVerts: idx })));
+    if (slab.volume() < 0) {
+      for (let t = 0; t < idx.length; t += 3) { const x = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = x; }
+      slab = keep(new Manifold(new Mesh({ numProp: 3, vertProperties: pos, triVerts: idx })));
+    }
+    slab = keep(slab.intersect(prism(ngon(L.Aw + ov), -1, LID_T + 1)));
+    return keep(b.add(slab));
+  }
+
+  const out = { walls: [], base: null, top: null, report: { volumes: [], genus: [] } };
   try {
     for (let k = 0; k < L.N; k++) {
       const w = wall(thick[k]);
@@ -139,6 +190,12 @@ export function buildLamp(M, L, thick, cols, rows) {
     const b = base();
     out.report.baseVolume = b.volume();
     out.base = meshOf(b);
+    free();
+    if (top) {
+      const t = lid(top.T, top.cols, top.rows);
+      out.report.topVolume = t.volume(); out.report.topGenus = t.genus();
+      out.top = meshOf(t);
+    }
   } finally {
     free();
   }
@@ -164,6 +221,35 @@ export function wallThickness(pos, L, T, cols, rows) {
     } else th[v] = TE;
   }
   return th;
+}
+
+/** Per-vertex thickness of the lid for preview shading. */
+export function topThickness(pos, L, T, cols, rows) {
+  const th = new Float32Array(pos.length / 3), P = L.top;
+  for (let v = 0; v < th.length; v++) {
+    const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
+    const u = (x - P.x0) / P.W, w = (P.y1 - y) / P.H;
+    let inside = z > 0.01;
+    for (let k = 0; inside && k < L.N; k++) { const d = rad(-90 + (360 / L.N) * k); if (x * Math.cos(d) + y * Math.sin(d) > L.Aw + 0.01) inside = false; }
+    if (inside) {
+      th[v] = T[Math.min(rows - 1, Math.max(0, Math.round(w * (rows - 1)))) * cols + Math.min(cols - 1, Math.max(0, Math.round(u * (cols - 1))))];
+    } else th[v] = TE;
+  }
+  return th;
+}
+
+/** Put the lid on top of the walls (lift > 0 for the exploded view). */
+export function placeTop(pos, L, lift = 0) {
+  const p = Float32Array.from(pos), dz = L.pocketTop + L.HW + lift;
+  for (let i = 2; i < p.length; i += 3) p[i] += dz;
+  return p;
+}
+
+/** Lid upside down for printing: smooth top face on the bed. */
+export function topPrintPose(pos, L) {
+  const p = new Float32Array(pos.length);
+  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = -pos[i + 1]; p[i + 2] = LID_T - pos[i + 2]; }
+  return p;
 }
 
 /** Rotate a front-wall mesh to wall k's place and lift it onto the base. */

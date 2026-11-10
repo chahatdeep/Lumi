@@ -19,11 +19,11 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 - **Live 3D preview:** wireframe, grid, auto-rotate, preset views and screenshots, in light or dark theme.
 
 **Lamp kit (Lamp tab)**
-- **What it is:** a 3-, 4-, 5- or 6-sided lamp made of flat lithophane walls, one photo per wall. Click a wall slot or drop a photo on it.
-- **How it locks:** the walls join with **sliding dovetails** on their mitred edges and drop into a groove in a **base** that holds a round LED puck. Nothing is glued.
+- **What it is:** a 3-, 4-, 5- or 6-sided lamp made of flat lithophane walls plus a lithophane **top**, one photo per wall and one for the top. Click a slot or drop a photo on it.
+- **How it locks:** the walls join with **sliding dovetails** on their mitred edges and drop into a groove in a **base** that holds a round LED puck. The top has a matching groove underneath, so it caps and locks the wall tops. Nothing is glued.
 - **LED:** the base is sized for the Bambu Lab LED Lamp Kit 001 (Ø59 × 8 mm) by default, or any custom puck size.
 - **Geometry:** the parts are built with exact CSG (manifold-3d), so every part is watertight. Each wall is optimized to stay slicer-friendly.
-- **Export:** one ZIP with an STL per wall (laid flat for printing), the base, and assembly steps. You can preview the lamp assembled or exploded, and tune the joint clearances.
+- **Export:** one ZIP with an STL per wall and for the top (laid flat for printing), the LED base, and assembly steps. You can preview the lamp assembled or exploded, and tune the joint clearances.
 
 **Pop 3D (image → 3D model)**
 - **Depth relief:** a local AI depth estimate (Depth Anything V2 via transformers.js) plus AI background removal (RMBG-1.4) produces a printable relief with a flat base.
@@ -135,11 +135,11 @@ The real-light renders on the site come from `build/render/`:
 ### Make a lamp (Lamp tab)
 
 1. Pick **3, 4, 5 or 6 sides** and the LED, which is the Bambu Lab LED Lamp Kit 001 by default.
-2. Give each wall a photo: click a slot, or drop a photo on it. Empty walls use the Image tab's photo, and the Edit adjustments apply to every wall.
+2. Give each wall and the top a photo: click a slot, or drop a photo on it. Empty slots use the Image tab's photo, and the Edit adjustments apply to every wall.
 3. Check the lamp in the **Assembled** and **Exploded** previews. Adjust the clearances under **Fit** if your printer prints tight.
 4. Click **Export lamp kit (.zip)**.
-5. Print the walls flat with the smooth face down, at 100% infill, in white PLA. Print the base in any colour.
-6. Assemble: put the LED in the base, slide the walls together, then drop the ring into the base.
+5. Print the walls and the top flat with the smooth face down, at 100% infill, in white PLA. Print the base in any colour.
+6. Assemble: put the LED in the base, slide the walls together, drop the ring into the base, then press the top on.
 
 ### Make a 3D model (Pop 3D)
 

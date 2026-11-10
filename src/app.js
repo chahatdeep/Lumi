@@ -3,7 +3,7 @@ import { Form, el, icons, hydrateIcons } from './ui.js';
 import { orient, process, sampleGrid, demoImage } from './imageproc.js';
 import { computeLayout, estimateTriangles, surfaceWidth, WRAP_SHAPES, FLAT_SHAPES, PREVIEW_QUALITY } from './layout.js';
 import { thicknessMapper } from './mesh.js';
-import { lampLayout, placeWall, DEFAULT_FACE_W, LED_KITS } from './lampkit.js';
+import { lampLayout, placeWall, placeTop, DEFAULT_FACE_W, LED_KITS } from './lampkit.js';
 
 // ---------------------------------------------------------------- state
 const DEFAULTS = {
@@ -840,6 +840,7 @@ function buildPopPane() {
 
 // ---------------------------------------------------------------- lamp kit (3-6 locking lithophane walls + LED base)
 const lampPhotos = [];          // per wall: { src, name }; empty = the image from the Image tab
+let lampTop = null;             // the lid photo: { src, name }; null = the image from the Image tab
 let lampWorker = null, lampBusy = false, lampPending = false, lampTimer = null, lampData = null, lampFirst = true, lampError = '', lampSeq = 0;
 const lampUI = {};
 
@@ -847,11 +848,13 @@ function lampParams() {
   const led = state.lampLed === 'custom' ? { label: 'Custom LED puck', d: state.lampLedD, h: state.lampLedH } : LED_KITS[state.lampLed];
   return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, led };
 }
-function lampSrc(k) { return lampPhotos[k]?.src || source; }
+function lampSrc(k) { return (k === 'top' ? lampTop?.src : lampPhotos[k]?.src) || source; }
+const lampOwn = () => lampPhotos.some(Boolean) || !!lampTop;
+const lampAspect = (L, k) => (k === 'top' ? [L.top.W, L.top.H] : [L.IW, L.IH]);
 
 // crop a photo to the wall's window (biased up to keep heads in frame), then Lumi's usual image processing
-function lampCanvas(src, L, maxDim = 1400) {
-  const ar = L.IW / L.IH, sw = src.width, sh = src.height;
+function lampCanvas(src, [aw, ah], maxDim = 1400) {
+  const ar = aw / ah, sw = src.width, sh = src.height;
   let cw = sw, ch = sw / ar;
   if (ch > sh) { ch = sh; cw = sh * ar; }
   const sx = (sw - cw) / 2, sy = (sh - ch) * 0.42;
@@ -867,12 +870,16 @@ function lampThickness(L, grid) {
   const cols = Math.round(L.IW / grid) + 1, rows = Math.round(L.IH / grid) + 1, map = thicknessMapper(state);
   const thick = [];
   for (let k = 0; k < L.N; k++) {
-    const g = sampleGrid(lampCanvas(lampSrc(k), L), cols, rows);
+    const g = sampleGrid(lampCanvas(lampSrc(k), lampAspect(L, k)), cols, rows);
     const T = new Float32Array(g.length);
     for (let i = 0; i < g.length; i++) T[i] = map(g[i]);
     thick.push(T);
   }
-  return { thick, cols, rows };
+  const tc = Math.round(L.top.W / grid) + 1, tr = Math.round(L.top.H / grid) + 1;
+  const g = sampleGrid(lampCanvas(lampSrc('top'), lampAspect(L, 'top')), tc, tr);
+  const top = { T: new Float32Array(g.length), cols: tc, rows: tr };
+  for (let i = 0; i < g.length; i++) top.T[i] = map(g[i]);
+  return { thick, cols, rows, top };
 }
 
 function getLampWorker() {
@@ -893,14 +900,14 @@ function getLampWorker() {
 function scheduleLamp(delay = 200) { clearTimeout(lampTimer); lampTimer = setTimeout(buildLampPreview, delay); }
 
 function buildLampPreview() {
-  if (tab !== 'lamp' || (!source && !lampPhotos.some(Boolean))) return;
+  if (tab !== 'lamp' || (!source && !lampOwn())) return;
   if (lampBusy) { lampPending = true; return; }
   let L;
   try { L = lampLayout(lampParams()); } catch (err) { lampError = err.message; syncAll(); return; }
   lampBusy = true;
   $('#busy').classList.remove('hidden');
-  const { thick, cols, rows } = lampThickness(L, 0.6);
-  getLampWorker().postMessage({ type: 'build', id: ++lampSeq, params: lampParams(), thick, cols, rows }, thick.map((t) => t.buffer));
+  const { thick, cols, rows, top } = lampThickness(L, 0.6);
+  getLampWorker().postMessage({ type: 'build', id: ++lampSeq, params: lampParams(), thick, cols, rows, top }, [...thick.map((t) => t.buffer), top.T.buffer]);
   renderLampSlots(L);
   if (view === '2d') draw2d();
 }
@@ -910,6 +917,7 @@ function showLamp() {
   const L = lampData.layout, ex = state.lampView === 'exploded';
   const parts = lampData.walls.map((w, k) => ({ pos: placeWall(w.pos, L, k, ex ? 28 : 0, ex ? 30 : 0), idx: w.idx, thick: w.thick }));
   parts.push({ pos: lampData.base.pos, idx: lampData.base.idx, thick: new Float32Array(lampData.base.pos.length / 3).fill(50) });
+  if (lampData.top) parts.push({ pos: placeTop(lampData.top.pos, L, ex ? 50 : 0), idx: lampData.top.idx, thick: lampData.top.thick });
   let nv = 0, ni = 0;
   for (const p of parts) { nv += p.pos.length / 3; ni += p.idx.length; }
   const pos = new Float32Array(nv * 3), idx = new Uint32Array(ni), thick = new Float32Array(nv);
@@ -921,37 +929,37 @@ function showLamp() {
   }
   viewer.setLampMesh({ pos, idx, thick }, lampFirst);
   lampFirst = false;
-  if (tab === 'lamp') $('#dims').textContent = `${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} × ${(L.pocketTop + L.HW).toFixed(0)} mm · ${L.N} walls + base`;
+  if (tab === 'lamp') $('#dims').textContent = `${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} × ${L.height.toFixed(0)} mm · ${L.N} walls + top + base`;
   applyLighting();
 }
 
 function onLampChange(keys, imageChanged) {
   if (keys.has('lampSides')) { state.lampFaceW = DEFAULT_FACE_W[state.lampSides]; lampFirst = true; }
-  if (keys.size === 1 && keys.has('lampView')) { showLamp(); return; }
+  if (keys.size === 1 && keys.has('lampView')) { lampFirst = true; showLamp(); return; }
   const relevant = imageChanged || [...keys].some((k) => LAMP_KEYS.has(k) || ['minThick', 'maxThick', 'mapping', 'attenuation'].includes(k));
   if (relevant && tab === 'lamp') scheduleLamp();
 }
 
 async function setLampPhoto(k, file) {
   if (!file || !file.type.startsWith('image/')) { toast('That doesn’t look like an image'); return; }
-  try { lampPhotos[k] = { src: await createImageBitmap(file), name: file.name }; scheduleLamp(0); }
+  try { const p = { src: await createImageBitmap(file), name: file.name }; if (k === 'top') lampTop = p; else lampPhotos[k] = p; scheduleLamp(0); }
   catch (e) { toast('Could not open image: ' + e.message); }
 }
 
 function renderLampSlots(L) {
   if (!lampUI.slots) return;
-  lampUI.slots.replaceChildren(...Array.from({ length: L.N }, (_, k) => {
-    const src = lampSrc(k), own = !!lampPhotos[k];
+  lampUI.slots.replaceChildren(...[...Array.from({ length: L.N }, (_, k) => k), 'top'].map((k) => {
+    const src = lampSrc(k), own = k === 'top' ? !!lampTop : !!lampPhotos[k];
     const thumb = el('canvas', { class: 'lamp-thumb' });
     if (src) {
-      const c = lampCanvas(src, L, 240);
+      const c = lampCanvas(src, lampAspect(L, k), 240);
       thumb.width = c.width; thumb.height = c.height;
       thumb.getContext('2d').drawImage(c, 0, 0);
     }
     const slot = el('div', { class: 'lamp-slot' + (own ? ' own' : ''), title: 'Click to choose a photo, or drop one here' },
       thumb,
-      el('div', { class: 'lamp-slot-label' }, k === 0 ? '1 · Front' : String(k + 1)),
-      own ? el('button', { class: 'lamp-slot-x', title: 'Use the Image tab photo', onclick: (e) => { e.stopPropagation(); lampPhotos[k] = null; scheduleLamp(0); } }, '×') : null);
+      el('div', { class: 'lamp-slot-label' }, k === 'top' ? 'Top' : k === 0 ? '1 · Front' : String(k + 1)),
+      own ? el('button', { class: 'lamp-slot-x', title: 'Use the Image tab photo', onclick: (e) => { e.stopPropagation(); if (k === 'top') lampTop = null; else lampPhotos[k] = null; scheduleLamp(0); } }, '×') : null);
     slot.addEventListener('click', () => { lampUI.pick = k; lampUI.file.click(); });
     slot.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', () => slot.classList.remove('over'));
@@ -964,30 +972,32 @@ function drawLamp2d() {
   let L;
   try { L = lampLayout(lampParams()); } catch { return; }
   const h = 640, w = Math.round((h * L.IW) / L.IH), gap = 18;
-  canvas2d.width = L.N * w + (L.N - 1) * gap; canvas2d.height = h;
+  const tw = Math.round((h * L.top.W) / L.top.H);
+  canvas2d.width = L.N * w + L.N * gap + tw; canvas2d.height = h;
   const g = canvas2d.getContext('2d');
   g.clearRect(0, 0, canvas2d.width, canvas2d.height);
-  for (let k = 0; k < L.N; k++) { const src = lampSrc(k); if (src) g.drawImage(lampCanvas(src, L, 900), k * (w + gap), 0, w, h); }
+  for (let k = 0; k < L.N; k++) { const src = lampSrc(k); if (src) g.drawImage(lampCanvas(src, lampAspect(L, k), 900), k * (w + gap), 0, w, h); }
+  if (lampSrc('top')) g.drawImage(lampCanvas(lampSrc('top'), lampAspect(L, 'top'), 900), L.N * (w + gap), 0, tw, h);
 }
 
 function lampStatusBar() {
   if (!lampData) return [el('span', {}, lampError ? '⚠ ' + lampError : 'Lamp kit · building the plates…')];
   const L = lampData.layout, r = lampData.report;
-  const tris = lampData.walls.reduce((a, w) => a + w.idx.length / 3, 0) + lampData.base.idx.length / 3;
-  const own = lampPhotos.filter(Boolean).length;
+  const tris = lampData.walls.reduce((a, w) => a + w.idx.length / 3, 0) + lampData.base.idx.length / 3 + (lampData.top ? lampData.top.idx.length / 3 : 0);
+  const own = lampPhotos.filter(Boolean).length + (lampTop ? 1 : 0);
   return [
-    el('span', {}, el('b', {}, `${L.N} walls + base`)),
+    el('span', {}, el('b', {}, `${L.N} walls + top + base`)),
     el('span', { class: 'pill' }, r.genus.every((g) => g === 0) ? '✓ solid parts · locking joints' : '⚠ check the parts'),
     el('span', {}, 'Preview ', el('b', {}, fmtCount(tris)), ' tris'),
     el('span', {}, `built in ${Math.round(r.ms)} ms`),
-    el('span', { class: 'right' }, own ? `${own} wall photo${own > 1 ? 's' : ''} + ${source ? sourceName : 'no image'}` : (source ? sourceName : 'No image')),
+    el('span', { class: 'right' }, own ? `${own} own photo${own > 1 ? 's' : ''} + ${source ? sourceName : 'no image'}` : (source ? sourceName : 'No image')),
   ];
 }
 
 async function doLampExport() {
   let L;
   try { L = lampLayout(lampParams()); } catch (e) { toast(e.message); return; }
-  if (!source && !lampPhotos.some(Boolean)) { toast('Load an image first'); return; }
+  if (!source && !lampOwn()) { toast('Load an image first'); return; }
   const base = ((state.fileName || sourceName || 'lumi') + `-lamp-${L.N}`).replace(/[\\/:*?"<>|]+/g, '_');
   const name = `${base}.zip`;
   let filePath = null;
@@ -1002,7 +1012,7 @@ async function doLampExport() {
   $('#modalBar').style.width = '2%';
   $('#modalExtra').textContent = '';
   await new Promise((r) => setTimeout(r, 30));
-  const { thick, cols, rows } = lampThickness(L, state.mmpp);
+  const { thick, cols, rows, top } = lampThickness(L, state.mmpp);
   exportWorker = new Worker(new URL('./lamp-worker.js', import.meta.url), { type: 'module' });
   exportWorker.onmessage = (e) => {
     const m = e.data;
@@ -1010,7 +1020,7 @@ async function doLampExport() {
     else if (m.type === 'file') exportDone(m);
     else if (m.type === 'error') { toast('Export failed: ' + m.message); closeExport(); }
   };
-  exportWorker.postMessage({ type: 'export', params: lampParams(), thick, cols, rows, name: base, maxTriangles: state.lampMaxTris }, thick.map((t) => t.buffer));
+  exportWorker.postMessage({ type: 'export', params: lampParams(), thick, cols, rows, name: base, maxTriangles: state.lampMaxTris, top }, [...thick.map((t) => t.buffer), top.T.buffer]);
 }
 
 function buildLampPane() {
@@ -1024,18 +1034,19 @@ function buildLampPane() {
     n.replaceChildren(...[
       L.W > state.lampFaceW + 0.05 ? el('div', { class: 'note' }, `Walls widened to ${L.W.toFixed(1)} mm so the LED fits inside the ${L.N}-sided ring.`) : null,
       el('dl', { class: 'kv' },
-        el('dt', {}, 'Lamp'), el('dd', {}, `${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} mm across · ${(L.pocketTop + L.HW).toFixed(0)} mm tall`),
+        el('dt', {}, 'Lamp'), el('dd', {}, `${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} mm across · ${L.height.toFixed(0)} mm tall`),
         el('dt', {}, 'Walls'), el('dd', {}, `${L.N} × ${L.W.toFixed(1)} × ${L.HW.toFixed(0)} mm`),
         el('dt', {}, 'Photo window'), el('dd', {}, `${L.IW.toFixed(1)} × ${L.IH.toFixed(0)} mm`),
+        el('dt', {}, 'Top photo'), el('dd', {}, `${L.N}-sided lid · ${L.top.W.toFixed(0)} × ${L.top.H.toFixed(0)} mm photo`),
         el('dt', {}, 'Base'), el('dd', {}, `${baseAcross.toFixed(0)} mm across · ${L.baseH.toFixed(0)} mm tall`),
-        el('dt', {}, 'Parts'), el('dd', {}, `${L.N + 1} plates that lock together`)),
+        el('dt', {}, 'Parts'), el('dd', {}, `${L.N} walls + top + LED base, all locking`)),
       lampError ? el('div', { class: 'note' }, '⚠ ' + lampError) : null,
     ].filter(Boolean));
   });
   const btn = (label, icon, onclick, cls = 'btn primary big') => el('button', { class: cls, onclick }, el('span', { html: icons[icon], style: 'display:contents' }), label);
   const pane = el('div', {}, lampUI.file,
     f.card({ title: 'Lamp kit', icon: 'lamp' },
-      el('div', { class: 'note' }, 'Flat lithophane walls that lock together with sliding dovetails, on a base that holds a round LED puck. No glue, no supports.'),
+      el('div', { class: 'note' }, 'Flat lithophane walls that lock together with sliding dovetails, a lithophane top that caps them, and a base that holds a round LED puck. No glue, no supports.'),
       f.seg('lampSides', 'Sides', [[3, '3'], [4, '4'], [5, '5'], [6, '6']]),
       f.select('lampLed', 'LED', [['bambu001', 'Bambu Lab LED Lamp Kit 001 · Ø59 × 8 mm'], ['custom', 'Other round LED puck']]),
       f.slider('lampLedD', 'Puck diameter', 30, 100, 0.5, 'mm', { show: (s) => s.lampLed === 'custom' }),
@@ -1045,18 +1056,18 @@ function buildLampPane() {
       f.seg('lampView', 'Preview', [['assembled', 'Assembled'], ['exploded', 'Exploded']]),
       info),
     f.card({ title: 'Photos', icon: 'image' },
-      el('div', { class: 'hint' }, 'One photo per wall: wall 1 is the front, the rest go round to its right. Click a wall or drop a photo on it. Empty walls use the photo from the Image tab; Edit adjustments apply to all.'),
+      el('div', { class: 'hint' }, 'One photo per wall plus one for the top: wall 1 is the front, the rest go round to its right. Click a slot or drop a photo on it. Empty slots use the photo from the Image tab; Edit adjustments apply to all.'),
       lampUI.slots,
-      el('div', { class: 'btns' }, el('button', { class: 'btn', onclick: () => { lampPhotos.length = 0; scheduleLamp(0); } }, 'Use the Image tab photo on every wall'))),
+      el('div', { class: 'btns' }, el('button', { class: 'btn', onclick: () => { lampPhotos.length = 0; lampTop = null; scheduleLamp(0); } }, 'Use the Image tab photo everywhere'))),
     f.card({ title: 'Fit', icon: 'wand', open: false },
       el('div', { class: 'hint' }, 'Gaps between the printed parts. Raise them a little if your printer prints tight.'),
       f.slider('lampClr', 'Dovetail gap', 0.05, 0.5, 0.01, 'mm'),
       f.slider('lampMiter', 'Corner gap', 0, 0.4, 0.01, 'mm'),
-      f.slider('lampGroove', 'Base groove gap', 0.05, 0.6, 0.01, 'mm')),
+      f.slider('lampGroove', 'Groove gap (base + top)', 0.05, 0.6, 0.01, 'mm')),
     f.card({ title: 'Export lamp kit', icon: 'download' },
       f.slider('lampMaxTris', 'Max triangles / wall', 50000, 800000, 10000, '', { tip: 'Each wall is optimized to stay slicer-friendly' }),
       btn('Export lamp kit (.zip)', 'download', doLampExport),
-      el('div', { class: 'note' }, 'ZIP with one STL per wall (laid flat, ready to print), the base, and assembly steps. Walls: white PLA, smooth face down, 100% infill, 0.12 mm layers.')),
+      el('div', { class: 'note' }, 'ZIP with one STL per wall and the top (laid flat, ready to print), the LED base, and assembly steps. Walls: white PLA, smooth face down, 100% infill, 0.12 mm layers.')),
   );
   panes.lamp = { el: pane, form: f };
 }

@@ -1,6 +1,6 @@
 // Lamp kit worker: exact CSG with manifold-3d (WebAssembly) off the UI thread.
 import Module from './vendor/manifold.js';
-import { lampLayout, buildLamp, wallThickness, printPose } from './lampkit.js';
+import { lampLayout, buildLamp, wallThickness, printPose, topThickness, topPrintPose } from './lampkit.js';
 import { simplifyMesh } from './simplify.js';
 import { toSTLBinary } from './exporters.js';
 import { zipSync, strToU8 } from './vendor/fflate.js';
@@ -36,12 +36,13 @@ function readme(L, name) {
   return [
     `${name}: ${L.N}-sided Lumi lithophane lamp`,
     '',
-    `Parts: wall-1 ... wall-${L.N}.stl (wall 1 = front, the rest go round to its right) and base.stl.`,
-    `Lamp: ${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} mm across, ${(L.pocketTop + L.HW).toFixed(0)} mm tall. Walls ${L.W.toFixed(1)} x ${L.HW.toFixed(1)} mm.`,
+    `Parts: wall-1 ... wall-${L.N}.stl (wall 1 = front, the rest go round to its right), top.stl (photo lid) and base.stl (LED fixture).`,
+    `Lamp: ${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} mm across, ${L.height.toFixed(0)} mm tall. Walls ${L.W.toFixed(1)} x ${L.HW.toFixed(1)} mm.`,
     `LED: ${L.led.label || 'round LED puck'} (D${L.led.d} x ${L.led.h} mm).`,
     '',
     'Print',
     '  Walls: white PLA, flat with the smooth outer face down, 100% infill, 0.12 mm layers, no supports.',
+    '  Top:   white PLA, smooth face down (it is exported upside down), same settings as the walls.',
     '  Base:  any colour, 15% infill, no supports.',
     '',
     'Assemble',
@@ -49,6 +50,7 @@ function readme(L, name) {
     `  2. Slide the walls together in order (1 -> 2 -> ... -> ${L.N}): each wall's channel slides down over the previous wall's rail.`,
     `  3. Slide wall ${L.N} down so it engages wall ${L.N - 1} and wall 1 at once, closing the ring.`,
     '  4. Lower the ring into the groove in the base. Lift it off to reach the LED (finger notch at the front).',
+    '  5. Press the top on: the wall tops drop into the groove under it, locking the ring at the top too.',
     '',
     `Fit: dovetail clearance ${L.clr} mm, mitre gap ${L.miter} mm, groove clearance ${L.grooveClr} mm (adjustable in Lumi > Lamp > Fit).`,
     'Made with Lumi: https://chahatdeep.github.io/Lumi/',
@@ -62,16 +64,18 @@ self.onmessage = async (e) => {
     const L = lampLayout(msg.params);
     if (msg.type === 'build') {
       const t0 = performance.now();
-      const r = buildLamp(Mk, L, msg.thick, msg.cols, msg.rows);
+      const r = buildLamp(Mk, L, msg.thick, msg.cols, msg.rows, msg.top);
       const walls = r.walls.map((w, k) => ({ ...w, thick: wallThickness(w.pos, L, msg.thick[k], msg.cols, msg.rows) }));
       const transfer = [];
       for (const w of walls) transfer.push(w.pos.buffer, w.idx.buffer, w.thick.buffer);
       transfer.push(r.base.pos.buffer, r.base.idx.buffer);
-      self.postMessage({ type: 'lamp', id: msg.id, layout: L, walls, base: r.base, report: { ...r.report, ms: performance.now() - t0 } }, transfer);
+      const top = r.top && { ...r.top, thick: topThickness(r.top.pos, L, msg.top.T, msg.top.cols, msg.top.rows) };
+      if (top) transfer.push(top.pos.buffer, top.idx.buffer, top.thick.buffer);
+      self.postMessage({ type: 'lamp', id: msg.id, layout: L, walls, base: r.base, top, report: { ...r.report, ms: performance.now() - t0 } }, transfer);
     } else if (msg.type === 'export') {
       const progress = (stage, p) => self.postMessage({ type: 'progress', stage, p });
       progress('Building the plates', 0.05);
-      const r = buildLamp(Mk, L, msg.thick, msg.cols, msg.rows);
+      const r = buildLamp(Mk, L, msg.thick, msg.cols, msg.rows, msg.top);
       const files = {}, stats = { walls: [], closed: true };
       r.walls.forEach((w, k) => {
         progress(`Optimizing wall ${k + 1} of ${L.N}`, 0.15 + (0.75 * k) / L.N);
@@ -81,11 +85,19 @@ self.onmessage = async (e) => {
         stats.closed = stats.closed && isClosed(idx);
         files[`wall-${k + 1}.stl`] = toSTLBinary(s.pos, idx, `${msg.name} wall ${k + 1}`);
       });
+      if (r.top) {
+        progress('Optimizing the top', 0.9);
+        const s = simplifyMesh(topPrintPose(r.top.pos, L), r.top.idx, { tolerance: 0.02, maxTriangles: msg.maxTriangles });
+        const idx = dropTwins(s.idx);
+        stats.top = idx.length / 3;
+        stats.closed = stats.closed && isClosed(idx);
+        files['top.stl'] = toSTLBinary(s.pos, idx, `${msg.name} top`);
+      }
       files['base.stl'] = toSTLBinary(r.base.pos, r.base.idx, `${msg.name} base`);
       files['README.txt'] = strToU8(readme(L, msg.name));
       progress('Packing', 0.95);
       const data = zipSync(files, { level: 6 });
-      self.postMessage({ type: 'file', data, stats: { ...stats, triangles: stats.walls.reduce((a, b) => a + b, 0) + r.base.idx.length / 3, bytes: data.length } }, [data.buffer]);
+      self.postMessage({ type: 'file', data, stats: { ...stats, triangles: stats.walls.reduce((a, b) => a + b, 0) + (stats.top || 0) + r.base.idx.length / 3, bytes: data.length } }, [data.buffer]);
     }
   } catch (err) {
     self.postMessage({ type: 'error', id: msg.id, message: String((err && err.message) || err) });

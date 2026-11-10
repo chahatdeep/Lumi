@@ -113,11 +113,29 @@ export class Viewer {
     if (this.scene3 === 'pop') { this.bbox = geo.boundingBox; if (fit) this.fit(); }
   }
 
+  // Lamp kit: several plates in one mesh, shaded like a lithophane (per-vertex thickness)
+  setLampMesh({ pos, idx, thick }, fit) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeVertexNormals();
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pos.length), 3));
+    geo.computeBoundingBox();
+    this.lampThick = thick;
+    if (this.lampMesh) { this.lampMesh.geometry.dispose(); this.lampMesh.geometry = geo; }
+    else { this.lampMesh = new THREE.Mesh(geo, this.mats[this.mode]); this.scene.add(this.lampMesh); }
+    this.bboxes.lamp = geo.boundingBox;
+    this.lampMesh.visible = this.scene3 === 'lamp';
+    if (this.lightOpts) this.applyColors();
+    if (this.scene3 === 'lamp') { this.bbox = geo.boundingBox; if (fit) this.fit(); }
+  }
+
   setScene(name) {
     if (this.scene3 === name) return;
     this.scene3 = name;
     if (this.mesh) this.mesh.visible = name === 'litho';
     if (this.popMesh) this.popMesh.visible = name === 'pop';
+    if (this.lampMesh) this.lampMesh.visible = name === 'lamp';
     this.bbox = this.bboxes[name] || null;
     if (this.bbox) this.fit();
   }
@@ -127,6 +145,7 @@ export class Viewer {
     this.mode = o.mode;
     this.mats.none.color.set(o.materialColor);
     if (this.mesh) this.mesh.material = this.mats[o.mode];
+    if (this.lampMesh) this.lampMesh.material = this.mats[o.mode];
     this.applyColors();
   }
 
@@ -136,14 +155,18 @@ export class Viewer {
   setAutoRotate(on) { this.controls.autoRotate = on; this.controls.autoRotateSpeed = 1.6; }
 
   applyColors() {
-    if (!this.mesh || !this.thick || this.mode !== 'back') return;
+    if (this.mode !== 'back' || !this.lightOpts) return;
+    for (const [mesh, thick] of [[this.mesh, this.thick], [this.lampMesh, this.lampThick]]) if (mesh && thick) this.shade(mesh, thick);
+  }
+
+  shade(mesh, t) {
     const o = this.lightOpts;
     const col = new THREE.Color(o.lightColor);
     col.convertSRGBToLinear();
     const k = o.attenuation, Ta = Math.exp(-k * o.tmin), Tb = Math.exp(-k * o.tmax);
     const lo = o.intensityMin / 100, hi = o.intensityMax / 100;
-    const attr = this.mesh.geometry.getAttribute('color');
-    const c = attr.array, t = this.thick;
+    const attr = mesh.geometry.getAttribute('color');
+    const c = attr.array;
     for (let i = 0; i < t.length; i++) {
       const nrm = (Math.exp(-k * t[i]) - Tb) / (Ta - Tb);
       let b = lo + (hi - lo) * nrm;

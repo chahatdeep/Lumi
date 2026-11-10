@@ -20,6 +20,7 @@
     "electron": "^38.0.0",
     "electron-builder": "^25.1.8",
     "fflate": "^0.8.2",
+    "manifold-3d": "^3.5.4",
     "three": "^0.170.0"
   },
   "build": {

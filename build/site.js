@@ -46,7 +46,7 @@ window.addEventListener('message', (e) => {
 $('#themeBtn').addEventListener('click', () => { if (parent !== window) parent.postMessage({ lumiTheme: theme }, location.origin); });
 `;
 fs.writeFileSync(path.join(app, 'app.js'), appJs);
-for (const f of ['three.module.js', 'OrbitControls.js', 'fflate.js', 'earcut.js']) cp(`src/vendor/${f}`, path.join(app, 'vendor', f));
+for (const f of ['three.module.js', 'OrbitControls.js', 'fflate.js', 'earcut.js', 'manifold.js', 'manifold.wasm']) cp(`src/vendor/${f}`, path.join(app, 'vendor', f));
 cp('build/icon.png', path.join(app, 'icon.png'));
 cp('site/web.css', path.join(app, 'web.css'));
 

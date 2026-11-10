@@ -18,6 +18,13 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 - **Thickness control:** min and max thickness, linear or light-accurate tone curve, filament opacity, and a relief-inside option.
 - **Live 3D preview:** wireframe, grid, auto-rotate, preset views and screenshots, in light or dark theme.
 
+**Lamp kit (Lamp tab)**
+- **What it is:** a 3-, 4-, 5- or 6-sided lamp made of flat lithophane walls, one photo per wall. Click a wall slot or drop a photo on it.
+- **How it locks:** the walls join with **sliding dovetails** on their mitred edges and drop into a groove in a **base** that holds a round LED puck. Nothing is glued.
+- **LED:** the base is sized for the Bambu Lab LED Lamp Kit 001 (Ø59 × 8 mm) by default, or any custom puck size.
+- **Geometry:** the parts are built with exact CSG (manifold-3d), so every part is watertight. Each wall is optimized to stay slicer-friendly.
+- **Export:** one ZIP with an STL per wall (laid flat for printing), the base, and assembly steps. You can preview the lamp assembled or exploded, and tune the joint clearances.
+
 **Pop 3D (image → 3D model)**
 - **Depth relief:** a local AI depth estimate (Depth Anything V2 via transformers.js) plus AI background removal (RMBG-1.4) produces a printable relief with a flat base.
 - **Full 3D (AI):** generates a complete object from one photo:
@@ -124,6 +131,15 @@ The real-light renders on the site come from `build/render/`:
 - Use white PLA, and match **Filament opacity** to it.
 - Add a 5 mm brim for tall upright prints.
 - Print outer walls slowly, at about 40 mm/s.
+
+### Make a lamp (Lamp tab)
+
+1. Pick **3, 4, 5 or 6 sides** and the LED, which is the Bambu Lab LED Lamp Kit 001 by default.
+2. Give each wall a photo: click a slot, or drop a photo on it. Empty walls use the Image tab's photo, and the Edit adjustments apply to every wall.
+3. Check the lamp in the **Assembled** and **Exploded** previews. Adjust the clearances under **Fit** if your printer prints tight.
+4. Click **Export lamp kit (.zip)**.
+5. Print the walls flat with the smooth face down, at 100% infill, in white PLA. Print the base in any colour.
+6. Assemble: put the LED in the base, slide the walls together, then drop the ring into the base.
 
 ### Make a 3D model (Pop 3D)
 

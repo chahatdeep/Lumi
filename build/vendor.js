@@ -12,6 +12,8 @@ const files = {
   'transformers.min.js': 'node_modules/@huggingface/transformers/dist/transformers.min.js',
   'ort/ort-wasm-simd-threaded.asyncify.mjs': 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs',
   'ort/ort-wasm-simd-threaded.asyncify.wasm': 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm',
+  'manifold.js': 'node_modules/manifold-3d/manifold.js',
+  'manifold.wasm': 'node_modules/manifold-3d/manifold.wasm',
 };
 fs.mkdirSync(path.join(out, 'ort'), { recursive: true });
 for (const [dst, src] of Object.entries(files)) fs.copyFileSync(path.join(root, src), path.join(out, dst));

@@ -46,8 +46,8 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 
 | | |
 |---|---|
-| **Installer** | [Lumi-Setup-1.0.0.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-Setup-1.0.0.exe). Choose where to install; it adds a Start menu shortcut. |
-| **Portable** | [Lumi-1.0.0-portable.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.0.0/Lumi-1.0.0-portable.exe). A single file that runs without installing. |
+| **Installer** | [Lumi-Setup-1.1.0.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.1.0/Lumi-Setup-1.1.0.exe). Choose where to install; it adds a Start menu shortcut. |
+| **Portable** | [Lumi-1.1.0-portable.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.1.0/Lumi-1.1.0-portable.exe). A single file that runs without installing. |
 
 These run on Windows 10 and 11 (64-bit). All versions are on the [Releases](https://github.com/chahatdeep/Lumi/releases) page. The app isn't code-signed yet, so if Windows SmartScreen appears, choose **More info → Run anyway**.
 
@@ -89,8 +89,8 @@ npm run dist
 
 This writes to `dist/`:
 
-- `Lumi Setup 1.0.0.exe`, an NSIS installer that lets you choose the install folder;
-- `Lumi-1.0.0-portable.exe`, a single portable executable;
+- `Lumi-Setup-1.1.0.exe`, an NSIS installer that lets you choose the install folder;
+- `Lumi-1.1.0-portable.exe`, a single portable executable;
 - `win-unpacked/`, the unpacked app.
 
 To regenerate the app icon (`build/icon.png`), run `npm run icon`.

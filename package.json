@@ -1,7 +1,7 @@
 {
   "name": "lumi",
   "productName": "Lumi",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Lumi - Lithophane and 3D Model Maker",
   "main": "main.js",
   "author": "Chahat Deep Singh",

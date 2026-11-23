@@ -166,13 +166,23 @@ export class Viewer {
     const k = o.attenuation, Ta = Math.exp(-k * o.tmin), Tb = Math.exp(-k * o.tmax);
     const lo = o.intensityMin / 100, hi = o.intensityMax / 100;
     const attr = mesh.geometry.getAttribute('color');
-    const c = attr.array;
+    const c = attr.array, nrmA = mesh.geometry.getAttribute('normal')?.array;
+    // dim room light on the opaque parts (frames, lamp base, lid rim): almost no light passes through them,
+    // so on transmitted light alone they render pure black and their shape disappears
+    const L = [-0.33, -0.66, 0.67];                   // fixed key light from the front-left, above
     for (let i = 0; i < t.length; i++) {
       const nrm = (Math.exp(-k * t[i]) - Tb) / (Ta - Tb);
       let b = lo + (hi - lo) * nrm;
       b = b < 0 ? Math.max(0, lo * Math.exp(-k * (t[i] - o.tmax))) * 0.6 : Math.min(1, b);
       const lin = b * b; // perceptual -> linear
-      c[i * 3] = col.r * lin; c[i * 3 + 1] = col.g * lin; c[i * 3 + 2] = col.b * lin;
+      let r = col.r * lin, g = col.g * lin, bl = col.b * lin;
+      const w = Math.min(1, Math.max(0, (t[i] - o.tmax - 0.2) / 0.8));   // 0 on the photo, 1 on solid parts
+      if (w > 0 && nrmA) {
+        const nx = nrmA[i * 3], ny = nrmA[i * 3 + 1], nz = nrmA[i * 3 + 2];
+        const s = w * (0.035 + 0.16 * Math.abs(nx * L[0] + ny * L[1] + nz * L[2]) + 0.03 * (nz * 0.5 + 0.5));
+        r += s; g += s * 0.97; bl += s * 0.93;           // warm grey plastic
+      }
+      c[i * 3] = r; c[i * 3 + 1] = g; c[i * 3 + 2] = bl;
     }
     attr.needsUpdate = true;
   }

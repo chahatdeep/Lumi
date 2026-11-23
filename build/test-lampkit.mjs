@@ -47,7 +47,7 @@ for (const joint of ['dovetail', 'push']) for (const N of [3, 4, 5, 6]) {
     const a = walls[k].intersect(walls[(k + 1) % N]); worst = Math.max(worst, a.volume()); a.delete();
     if (joint === 'dovetail') for (const o of [base, lid]) { const b = walls[k].intersect(o); worst = Math.max(worst, b.volume()); b.delete(); }
   }
-  const good = worst < 1e-3 && r.report.genus.every((g) => g === 0) && r.report.topGenus === 1 && base.genus() === 1;   // rings: one hole each
+  const good = worst < 1e-3 && r.report.genus.every((g) => g === 0) && r.report.topGenus === 1 && base.genus() === 0;   // top ring: one hole; base ring: cut open by the wire slit at the back
   ok &&= good;
   const z = (m) => { const b = m.boundingBox(); return `${(b.max[2] - b.min[2]).toFixed(1)} mm`; };
   console.log(`fit test ${joint.padEnd(8)} N=${N}: wall slices ${F.HW} mm, base ring ${z(base)}, top ring ${z(lid)} tall | overlap ${worst.toFixed(4)} mm3 ${good ? 'OK' : 'FAIL'}`);

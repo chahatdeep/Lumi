@@ -2,7 +2,7 @@
 // round LED puck (default: Bambu Lab LED Lamp Kit 001, D59 x 8 mm).
 //   walls  mitred edges; joint 'dovetail' (default): joined by sliding dovetails (rail on the right edge, channel on the
 //          left edge); joint 'push': plain plates pushed into the base and top slots, held by grip ribs
-//   base   LED pocket, cable slot at the back, finger notch at the front, and a groove the wall bottoms drop into
+//   base   LED pocket, a keyhole cable opening at the back (slot for the plug, 5 mm wire slit from the top), finger notch at the front, and a groove the wall bottoms drop into
 //   top    an N-sided lithophane lid; the wall tops drop into a groove on its underside, locking the ring at both ends
 // Every photo is flat on the inside of the lamp, with the relief on the outside.
 // Geometry is exact CSG (manifold-3d); every part comes out watertight. Units: mm, Z up.
@@ -27,6 +27,8 @@ const FIT_H = 20;         // fit test: wall slice height
 const FIT_ROOF = 1.2;     // fit test: roof over the lid groove / floor under the base groove
 const FIT_RING = 3.0;     // fit test: ring width inside the walls
 const RIB_R = 0.8;        // grip ribs in the push-fit slots (vertical half-round ribs on the outer slot wall)
+const PLUG_W = 12;        // width of the plug slot at the back of the base (a USB-C plug body is about 11 mm)
+const CABLE_R = 2.5;      // half-width of the wire slit from the top of the base into the cable slot (5 mm)
 
 const rad = (d) => (d * Math.PI) / 180;
 const polar = (r, deg) => [r * Math.cos(rad(deg)), r * Math.sin(rad(deg))];
@@ -162,7 +164,19 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
     const groove = keep(prism(ngon(L.A + L.grooveClr), L.pocketTop, L.baseH + 1).subtract(prism(ngon(L.A - TE - L.grooveClr), L.pocketTop - 1, L.baseH + 2)));
     const pocket = keep(Manifold.cylinder(L.baseH, L.pocketD / 2, L.pocketD / 2, 160).translate([0, 0, FLOOR]));
     const back = -90 + 180 + (L.N % 2 ? L.half : 0);                         // a back face centre
-    const slot = keep(box(-7, 7, 0, L.A + 30, FLOOR, FLOOR + L.led.h + 0.5).rotate([0, 0, back - 90]));
+    // cable opening at the back, a keyhole: the slot the USB-C plug sits in, plus a slit from the top of the base down
+    // into it, so the wire drops in from above before the walls go on and the plug on its far end never has to be
+    // threaded through. All corners are rounded; the slit flares into the top of the base.
+    const slot = (() => {
+      const rect = (u0, u1, z0, z1) => keep(new CrossSection([[[u0, z0], [u1, z0], [u1, z1], [u0, z1]]], 'EvenOdd'));
+      const zs = FLOOR + L.led.h + 0.5, top = L.baseH, F = 1.2;                    // F: fillet radius
+      let p = keep(rect(-PLUG_W / 2, PLUG_W / 2, FLOOR, zs).add(rect(-CABLE_R, CABLE_R, FLOOR + 1, top + 4)));
+      p = keep(keep(p.offset(-2, 'Round', 2, 32)).offset(2, 'Round', 2, 32));         // round the slot's outer corners
+      p = keep(p.add(rect(-CABLE_R - F, CABLE_R + F, top, top + 4)));              // flare at the top of the base
+      p = keep(keep(p.offset(F, 'Round', 2, 32)).offset(-F, 'Round', 2, 32));         // fillet the inside corners
+      const y0 = L.pocketD / 2 - 2, y1 = L.A + 30;                                  // from inside the pocket to past the outside
+      return keep(keep(keep(p.extrude(y1 - y0)).translate([0, 0, -y1])).rotate([90, 0, 0]).rotate([0, 0, back - 90]));
+    })();
     const notch = keep(Manifold.cylinder(L.baseH, 7.5, 7.5, 48).translate([0, -(L.pocketD / 2 - 1.5), FLOOR + 3]));
     for (const cut of [groove, pocket, slot, notch]) b = keep(b.subtract(cut));
     if (L.joint === 'push') b = keep(b.add(ribs(L.pocketTop - 0.5, L.baseH - 1)));

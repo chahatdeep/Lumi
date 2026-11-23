@@ -83,7 +83,8 @@ function readme(L, name) {
     '  Base:  any colour, 15% infill, no supports.',
     '',
     'Assemble',
-    '  1. Press the LED puck into the base pocket, USB-C port toward the cable slot at the back.',
+    '  1. Plug the cable into the LED puck and press the puck into the pocket, USB-C port toward the slot at the back.',
+    '     Drop the wire into the slit from the top so it leaves through the slot: the plug on its far end stays outside.',
     ...(L.joint === 'push' ? [
       `  2. Push each wall straight down into its slot in the base, flat face in, relief out (wall 1 at the front, by the finger notch;`,
       `     the rest go round to its right). Two small ribs in each slot grip the wall.`,

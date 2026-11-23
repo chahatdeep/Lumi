@@ -24,7 +24,7 @@ const DEFAULTS = {
   popWidth: 100, popDepth: 12, popBase: 2, popBack: 0, popRound: 2, popCurve: 1, popSmooth: 0.4, popRes: 0.3, popInvert: false, popOrient: 'lying',
   popAI: 'hunyuan2', popLocalModel: 'turbo', popSteps: 30, popOctree: 256, popSeed: 1234,
   popMinPart: 2, popFill: 300, popCut: 0, popHeight: 80, popRescale: true, popMaxTris: 400000, popColor: '#e9dccb',
-  lampSides: 4, lampFaceW: 80, lampWinH: 94, lampLed: 'bambu001', lampLedD: 59, lampLedH: 8, lampView: 'exploded',
+  lampSides: 4, lampFaceW: 78, lampWinH: 94, lampLed: 'bambu001', lampLedD: 59, lampLedH: 8, lampView: 'exploded',
   lampMinThick: 0.8, lampMaxThick: 2.6,
   lampClr: 0.18, lampMiter: 0.1, lampGroove: 0.25, lampMaxTris: 300000, lampJoint: 'dovetail', lampGrip: 0.15,
   fileName: '', printOrient: 'flat', format: 'stl', optimize: 'balanced', capTriangles: true, maxTriangles: 600000, material: 'pla',

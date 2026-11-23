@@ -11,7 +11,7 @@
 export const LED_KITS = {
   bambu001: { label: 'Bambu Lab LED Lamp Kit 001', d: 59, h: 8 },
 };
-export const DEFAULT_FACE_W = { 3: 132, 4: 80, 5: 78, 6: 70 };
+export const DEFAULT_FACE_W = { 3: 132, 4: 78, 5: 78, 6: 70 };
 
 const TE = 6.0;           // frame / post thickness (inward)
 const TB = 4.0;           // top border

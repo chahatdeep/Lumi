@@ -89,12 +89,50 @@ document.getElementById('showFrame').addEventListener('click', () => {
 });
 lb.addEventListener('click', () => lb.close());
 
-// ---------------------------------------------------------------- film
-const ad = document.getElementById('adVideo');
-const adFrame = ad.parentElement;
-document.getElementById('adPlay').addEventListener('click', () => { ad.muted = false; ad.play(); });
-ad.addEventListener('play', () => adFrame.classList.add('playing'));
-ad.addEventListener('ended', () => adFrame.classList.remove('playing'));
+// ---------------------------------------------------------------- tour tiles (real app captures)
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const press = (group, btn) => group.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+// a tile cycles like a GIF while it is on screen (paused under the pointer) until the visitor picks something
+function cycler(tile, next) {
+  const ms = +tile.dataset.cycle;
+  let timer = null, stopped = still, visible = false;
+  const run = () => { clearInterval(timer); if (visible && !stopped) timer = setInterval(next, ms); };
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; run(); }, { threshold: 0.4 }).observe(tile);
+  tile.addEventListener('pointerenter', () => clearInterval(timer));
+  tile.addEventListener('pointerleave', run);
+  return () => { stopped = true; clearInterval(timer); };
+}
+// shapes: one button per image
+document.querySelectorAll('.tour-shapes').forEach((tile) => {
+  const group = tile.querySelector('.tseg'), btns = [...group.querySelectorAll('button')], imgs = [...tile.querySelectorAll('.tour-frame img')];
+  let cur = 0;
+  const show = (i) => { cur = (i + imgs.length) % imgs.length; imgs.forEach((im, k) => im.classList.toggle('on', k === cur)); press(group, btns[cur]); };
+  const stop = cycler(tile, () => show(cur + 1));
+  btns.forEach((b, k) => b.addEventListener('click', () => { stop(); show(k); }));
+});
+// lamp kit: sides x view; the cycle shows each side count assembled, then exploded
+document.querySelectorAll('.tour-lamp').forEach((tile) => {
+  const [sidesG, viewG] = tile.querySelectorAll('.tseg'), imgs = [...tile.querySelectorAll('.tour-frame img')];
+  const sides = [...sidesG.querySelectorAll('button')], views = [...viewG.querySelectorAll('button')];
+  let n = 1, v = 0;
+  const show = () => {
+    const key = `${sides[n].textContent}-${views[v].textContent.toLowerCase()}`;
+    imgs.forEach((im) => im.classList.toggle('on', im.dataset.k === key));
+    press(sidesG, sides[n]); press(viewG, views[v]);
+  };
+  const stop = cycler(tile, () => { if (v === 1) n = (n + 1) % sides.length; v = 1 - v; show(); });
+  sides.forEach((b, k) => b.addEventListener('click', () => { stop(); n = k; show(); }));
+  views.forEach((b, k) => b.addEventListener('click', () => { stop(); v = k; show(); }));
+});
+// backlit preview: a light switch
+document.querySelectorAll('.tour-switch').forEach((sw) => {
+  const [off, on] = sw.querySelectorAll('img'), label = sw.querySelector('.tour-pill b');
+  sw.addEventListener('click', () => {
+    const lit = sw.getAttribute('aria-pressed') !== 'true';
+    sw.setAttribute('aria-pressed', String(lit)); on.classList.toggle('on', lit); off.classList.toggle('on', !lit);
+    label.textContent = lit ? 'Light on' : 'Light off';
+  });
+});
 
 // ---------------------------------------------------------------- copy build commands
 document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {

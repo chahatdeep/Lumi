@@ -45,7 +45,7 @@
     <div class="nav-in">
       <a class="nav-brand" href="#top"><img src="assets/icon.png" alt="">Lumi</a>
       <div class="nav-links">
-        <a href="#film">Film</a>
+        <a href="#tour">Tour</a>
         <a href="#real">Real light</a>
         <a href="#make">Make one</a>
         <a href="#features">Features</a>
@@ -112,18 +112,64 @@
     </header>
 
     <!-- ============ real light ============ -->
-    <!-- ============ film ============ -->
-    <section class="section film" id="film">
+    <!-- ============ tour: real captures from the app ============ -->
+    <section class="section tour" id="tour">
       <div class="wrap">
-        <h2 class="headline">Watch the film.</h2>
-        <p class="lede">Fifteen seconds of Lumi: real renders of real Lumi meshes, and the app itself. Sound on.</p>
-      </div>
-      <div class="film-frame">
-        <video id="adVideo" src="media/lumi-ad.mp4" poster="media/lumi-ad-poster.jpg" preload="none" playsinline controls width="1920" height="1080"></video>
-        <button class="film-play" id="adPlay" type="button" aria-label="Play the Lumi film">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
-          <span>Play the film</span><small>0:15</small>
-        </button>
+        <h2 class="headline">See it work.</h2>
+        <p class="lede">Real captures from the Lumi app, all from one photo. Tap a tile to explore.</p>
+        <div class="bento tour-grid">
+          <article class="tile tour-tile tour-shapes b-wide" data-cycle="4200">
+            <div class="tour-head">
+              <div><p class="eyebrow">Shapes</p><h3>One photo. Any shape.</h3></div>
+              <div class="tseg" role="group" aria-label="Shape">
+                <button type="button" aria-pressed="true">Framed</button><button type="button" aria-pressed="false">Heart</button><button type="button" aria-pressed="false">Curved</button><button type="button" aria-pressed="false">Cylinder</button><button type="button" aria-pressed="false">Hexagon</button><button type="button" aria-pressed="false">Globe</button>
+              </div>
+            </div>
+            <div class="tour-frame">
+              <img class="on" src="media/tour/shape-1-framed.jpg" alt="Framed flat lithophane of the photo in Lumi" width="960" height="720">
+              <img src="media/tour/shape-2-heart.jpg" alt="Heart-shaped lithophane keepsake with a hanging loop" loading="lazy" width="960" height="720">
+              <img src="media/tour/shape-3-curved.jpg" alt="Curved lithophane panel" loading="lazy" width="960" height="720">
+              <img src="media/tour/shape-4-cylinder.jpg" alt="Cylinder lithophane lamp with a bulb fitting" loading="lazy" width="960" height="720">
+              <img src="media/tour/shape-5-hexagon.jpg" alt="Hexagonal prism lithophane lamp" loading="lazy" width="960" height="720">
+              <img src="media/tour/shape-6-globe.jpg" alt="Globe lithophane with top and bottom openings" loading="lazy" width="960" height="720">
+            </div>
+          </article>
+          <article class="tile tour-tile tour-light">
+            <div class="tour-head">
+              <div><p class="eyebrow">Backlit preview</p><h3>See it lit before you print.</h3></div>
+            </div>
+            <button class="tour-frame tour-switch" type="button" aria-pressed="true" aria-label="Preview light">
+              <img src="media/tour/light-off.jpg" alt="Lithophane preview with no light: a plain white relief" loading="lazy" width="960" height="720">
+              <img class="on" src="media/tour/light-on.jpg" alt="The same lithophane backlit: the portrait appears" loading="lazy" width="960" height="720">
+              <span class="tour-pill"><i></i><b>Light on</b></span>
+            </button>
+          </article>
+          <article class="tile tour-tile tour-lamp b-full" data-cycle="3200">
+            <div class="tour-head">
+              <div><p class="eyebrow">New · Lamp kit</p><h3>A lamp that locks together.</h3>
+                <p>Three to six lithophane walls with dovetail joints, a photo top and a base for a round LED puck. Every part prints flat, with no glue and no supports.</p></div>
+              <div class="tour-controls">
+                <div class="tseg" role="group" aria-label="Sides">
+                  <button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="true">4</button><button type="button" aria-pressed="false">5</button><button type="button" aria-pressed="false">6</button>
+                </div>
+                <div class="tseg" role="group" aria-label="View">
+                  <button type="button" aria-pressed="true">Assembled</button><button type="button" aria-pressed="false">Exploded</button>
+                </div>
+              </div>
+            </div>
+            <div class="tour-frame tour-frame-wide">
+              <img data-k="3-assembled" src="media/tour/lamp-3-assembled.jpg" alt="3-sided Lumi lamp kit, assembled" loading="lazy" width="1082" height="609">
+              <img data-k="3-exploded" src="media/tour/lamp-3-exploded.jpg" alt="3-sided Lumi lamp kit, exploded into walls, top and LED base" loading="lazy" width="1082" height="609">
+              <img data-k="4-assembled" class="on" src="media/tour/lamp-4-assembled.jpg" alt="4-sided Lumi lamp kit, assembled" loading="lazy" width="1082" height="609">
+              <img data-k="4-exploded" src="media/tour/lamp-4-exploded.jpg" alt="4-sided Lumi lamp kit, exploded into walls, top and LED base" loading="lazy" width="1082" height="609">
+              <img data-k="5-assembled" src="media/tour/lamp-5-assembled.jpg" alt="5-sided Lumi lamp kit, assembled" loading="lazy" width="1082" height="609">
+              <img data-k="5-exploded" src="media/tour/lamp-5-exploded.jpg" alt="5-sided Lumi lamp kit, exploded into walls, top and LED base" loading="lazy" width="1082" height="609">
+              <img data-k="6-assembled" src="media/tour/lamp-6-assembled.jpg" alt="6-sided Lumi lamp kit, assembled" loading="lazy" width="1082" height="609">
+              <img data-k="6-exploded" src="media/tour/lamp-6-exploded.jpg" alt="6-sided Lumi lamp kit, exploded into walls, top and LED base" loading="lazy" width="1082" height="609">
+            </div>
+          </article>
+        </div>
+        <p class="fine center">Screen captures of Lumi's 3D preview. Photo: "Novak Djokovic" by Andrew Campbell, CC BY 2.0 (cropped).</p>
       </div>
     </section>
 

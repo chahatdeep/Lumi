@@ -47,8 +47,8 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 
 | | |
 |---|---|
-| **Installer** | [Lumi-Setup-1.2.0.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.2.0/Lumi-Setup-1.2.0.exe). Choose where to install; it adds a Start menu shortcut. |
-| **Portable** | [Lumi-1.2.0-portable.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.2.0/Lumi-1.2.0-portable.exe). A single file that runs without installing. |
+| **Installer** | [Lumi-Setup-1.2.1.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.2.1/Lumi-Setup-1.2.1.exe). Choose where to install; it adds a Start menu shortcut. |
+| **Portable** | [Lumi-1.2.1-portable.exe](https://github.com/chahatdeep/Lumi/releases/download/v1.2.1/Lumi-1.2.1-portable.exe). A single file that runs without installing. |
 
 These run on Windows 10 and 11 (64-bit). All versions are on the [Releases](https://github.com/chahatdeep/Lumi/releases) page. The app isn't code-signed yet, so if Windows SmartScreen appears, choose **More info → Run anyway**.
 
@@ -90,8 +90,8 @@ npm run dist
 
 This writes to `dist/`:
 
-- `Lumi-Setup-1.2.0.exe`, an NSIS installer that lets you choose the install folder;
-- `Lumi-1.2.0-portable.exe`, a single portable executable;
+- `Lumi-Setup-1.2.1.exe`, an NSIS installer that lets you choose the install folder;
+- `Lumi-1.2.1-portable.exe`, a single portable executable;
 - `win-unpacked/`, the unpacked app.
 
 To regenerate the app icon (`build/icon.png`), run `npm run icon`.
@@ -139,7 +139,7 @@ The real-light renders on the site come from `build/render/`:
 2. Give each wall and the top a photo: click a slot, or drop a photo on it. Empty slots use the Image tab's photo, and the Edit adjustments apply to every wall.
 3. Check the lamp in the **Assembled** and **Exploded** previews. Adjust the clearances under **Fit** if your printer prints tight.
 4. Click **Export fit test (.zip)** and print it first. If the joints are tight or loose, adjust **Fit** and test again. Then click **Export lamp kit (.zip)**.
-5. Print the walls and the top flat with the smooth face down, at 100% infill, in white PLA. Print the base in any colour.
+5. Print the walls flat with the smooth inner face down and the top right side up as exported (the photos are flat inside the lamp, relief outside), at 100% infill, in white PLA. Print the base in any colour.
 6. Assemble: put the LED in the base, slide the walls together, drop the ring into the base, then press the top on. With push-fit joints, push each wall down into its slot in the base instead.
 
 ### Make a 3D model (Pop 3D)

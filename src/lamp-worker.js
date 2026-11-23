@@ -78,14 +78,14 @@ function readme(L, name) {
     `LED: ${L.led.label || 'round LED puck'} (D${L.led.d} x ${L.led.h} mm).`,
     '',
     'Print',
-    '  Walls: white PLA, flat with the smooth outer face down, 100% infill, 0.12 mm layers, no supports.',
-    '  Top:   white PLA, smooth face down (it is exported upside down), same settings as the walls.',
+    '  Walls: white PLA, flat with the smooth inner face down (relief up), 100% infill, 0.12 mm layers, no supports.',
+    '  Top:   white PLA, right side up as exported (relief up), same settings, no supports: the groove roof bridges.',
     '  Base:  any colour, 15% infill, no supports.',
     '',
     'Assemble',
     '  1. Press the LED puck into the base pocket, USB-C port toward the cable slot at the back.',
     ...(L.joint === 'push' ? [
-      `  2. Push each wall straight down into its slot in the base, photo relief facing in (wall 1 at the front, by the finger notch;`,
+      `  2. Push each wall straight down into its slot in the base, flat face in, relief out (wall 1 at the front, by the finger notch;`,
       `     the rest go round to its right). Two small ribs in each slot grip the wall.`,
       '  3. Press the top down over the wall tops: they drop into the slot under it, which holds the corners together.',
       '  To reach the LED, pull the top off, then lift a wall out.',
@@ -141,7 +141,7 @@ self.onmessage = async (e) => {
       const files = {}, stats = { walls: [], closed: true };
       r.walls.forEach((w, k) => {
         progress(`Optimizing wall ${k + 1} of ${L.N}`, 0.15 + (0.75 * k) / L.N);
-        const s = simplifyMesh(printPose(w.pos, L), w.idx, { tolerance: 0.02, maxTriangles: msg.maxTriangles });
+        const s = simplifyMesh(onBed(printPose(w.pos, L)), w.idx, { tolerance: 0.02, maxTriangles: msg.maxTriangles });
         const idx = dropTwins(s.idx);
         stats.walls.push(idx.length / 3);
         stats.closed = stats.closed && isClosed(idx);
@@ -149,7 +149,7 @@ self.onmessage = async (e) => {
       });
       if (r.top) {
         progress('Optimizing the top', 0.9);
-        const s = simplifyMesh(topPrintPose(r.top.pos, L), r.top.idx, { tolerance: 0.02, maxTriangles: msg.maxTriangles });
+        const s = simplifyMesh(onBed(topPrintPose(r.top.pos, L)), r.top.idx, { tolerance: 0.02, maxTriangles: msg.maxTriangles });
         const idx = dropTwins(s.idx);
         stats.top = idx.length / 3;
         stats.closed = stats.closed && isClosed(idx);

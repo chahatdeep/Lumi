@@ -4,6 +4,7 @@
 //          left edge); joint 'push': plain plates pushed into the base and top slots, held by grip ribs
 //   base   LED pocket, cable slot at the back, finger notch at the front, and a groove the wall bottoms drop into
 //   top    an N-sided lithophane lid; the wall tops drop into a groove on its underside, locking the ring at both ends
+// Every photo is flat on the inside of the lamp, with the relief on the outside.
 // Geometry is exact CSG (manifold-3d); every part comes out watertight. Units: mm, Z up.
 // Wall k faces angle -90 + 360k/N (k = 0 is the front, k = 1 is to its right seen from outside).
 
@@ -54,7 +55,8 @@ export function lampLayout(o) {
   for (let r = (A - TE) / cos; r <= R; r += 0.01) { const mm = Math.min(...margins(r, 0).slice(0, 2)); if (mm > best) { best = mm; rj = r; } }
   if (joint === 'dovetail' && best < 0.6) throw new Error('The dovetail does not fit in the wall corners');
   let sb = 3; while (joint === 'dovetail' && margins(rj, sb)[2] < 0.8) sb += 0.1;
-  sb = Math.max(sb, 5.5);
+  // the photo's flat face is the inner face, which the mitres make narrower than the outer one: keep 1.5 mm of frame there
+  sb = Math.max(sb, 5.5, TE * tan + 1.5);
   const IW = W - 2 * sb, IH = o.windowH, HW = IH + TB + BB;
   const pocketTop = FLOOR + led.h + 2;
   const lidT = Math.max(LID_T, (o.maxThick ?? 3.2) + 0.4);       // the top's photo gets the same contrast as the walls
@@ -88,7 +90,7 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
   }
 
   function heightfield(T) {
-    // watertight slab under the photo window: flat outer face at y = -A, inner relief at y = -A + t
+    // watertight slab in the photo window: flat inner face flush with the frame (y = -A + TE), relief facing out at y = -A + TE - t
     const ov = 0.6, nx = cols + 2, nz = rows + 2;
     const x0 = -L.IW / 2 - ov, x1 = L.IW / 2 + ov, z0 = BB - ov, z1 = BB + L.IH + ov;
     const n = nx * nz, pos = new Float32Array(n * 6);
@@ -96,7 +98,7 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
       const tj = Math.min(rows - 1, Math.max(0, j - 1)), ti = Math.min(cols - 1, Math.max(0, i - 1));
       const t = T[tj * cols + ti], v = j * nx + i;
       const x = x0 + ((x1 - x0) * i) / (nx - 1), z = z1 - ((z1 - z0) * j) / (nz - 1);
-      pos.set([x, -L.A + t, z], v * 3); pos.set([x, -L.A, z], (v + n) * 3);
+      pos.set([x, -L.A + TE - t, z], v * 3); pos.set([x, -L.A + TE, z], (v + n) * 3);
     }
     const tris = [];
     for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) {
@@ -133,7 +135,8 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
       [400 * dr[0] + L.miter * mr[0], 400 * dr[1] + L.miter * mr[1]]], -1, L.HW + 1);
     body = keep(body.intersect(wedge));
     if (L.joint === 'dovetail') {
-      body = keep(body.add(rail(-90 + L.half, 0, 0, L.HW)));                // rail on the right edge
+      // rail on the right edge, trimmed flush with the inner face (the print bed side)
+      body = keep(body.add(keep(rail(-90 + L.half, 0, 0, L.HW).intersect(box(-L.W, L.W, y0 - 1, y0 + TE, -1, L.HW + 1)))));
       body = keep(body.subtract(rail(-90 - L.half, L.clr, -1, L.HW + 1)));  // channel on the left edge
     }
     return body;
@@ -180,15 +183,16 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
     b = keep(b.subtract(prism(ngon(L.Aw), -LID_G - 1, L.lidT + 1)));
     if (L.joint === 'push') b = keep(b.add(ribs(-LID_G + 1, 0.5)));
     if (L.fit) return b;                               // fit test: the groove ring without the photo
-    // photo slab: flat outer face on top (z = L.lidT), relief underneath, clipped to the opening
+    // photo slab: flat face underneath, flush with the bottom of the lid (z = -LID_G), relief facing up (out),
+    // clipped to the opening. The lid prints right side up, so the slab, rim and plug all sit on the bed.
     const ov = 0.6, nx = tc + 2, ny = tr + 2, P = L.top;
     const x0 = P.x0 - ov, x1 = P.x1 + ov, y0 = P.y0 - ov, y1 = P.y1 + ov;
     const n = nx * ny, pos = new Float32Array(n * 6);
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
       const tj = Math.min(tr - 1, Math.max(0, j - 1)), ti = Math.min(tc - 1, Math.max(0, i - 1));
-      const t = Math.min(L.lidT - 0.2, T[tj * tc + ti]), v = j * nx + i;
+      const t = Math.min(LID_G + L.lidT - 0.2, T[tj * tc + ti]), v = j * nx + i;
       const x = x0 + ((x1 - x0) * i) / (nx - 1), y = y1 - ((y1 - y0) * j) / (ny - 1);
-      pos.set([x, y, L.lidT - t], v * 3); pos.set([x, y, L.lidT], (v + n) * 3);
+      pos.set([x, y, -LID_G + t], v * 3); pos.set([x, y, -LID_G], (v + n) * 3);
     }
     const tris = [];
     for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
@@ -207,7 +211,7 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
       for (let t = 0; t < idx.length; t += 3) { const x = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = x; }
       slab = keep(new Manifold(new Mesh({ numProp: 3, vertProperties: pos, triVerts: idx })));
     }
-    slab = keep(slab.intersect(prism(ngon(L.Aw + ov), -1, L.lidT + 1)));
+    slab = keep(slab.intersect(prism(ngon(L.Aw + ov), -LID_G - 1, L.lidT + 1)));
     return keep(b.add(slab));
   }
 
@@ -251,7 +255,7 @@ export function wallThickness(pos, L, T, cols, rows) {
   for (let v = 0; v < th.length; v++) {
     const x = pos[v * 3], z = pos[v * 3 + 2];
     const u = (x + L.IW / 2) / L.IW, w = (BB + L.IH - z) / L.IH;
-    if (u >= 0 && u <= 1 && w >= 0 && w <= 1 && pos[v * 3 + 1] < -L.A + TE - 0.01) {
+    if (u >= 0 && u <= 1 && w >= 0 && w <= 1 && pos[v * 3 + 1] > -L.A + 0.01) {
       th[v] = T[Math.min(rows - 1, Math.round(w * (rows - 1))) * cols + Math.min(cols - 1, Math.round(u * (cols - 1)))];
     } else th[v] = TE;
   }
@@ -264,7 +268,7 @@ export function topThickness(pos, L, T, cols, rows) {
   for (let v = 0; v < th.length; v++) {
     const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
     const u = (x - P.x0) / P.W, w = (P.y1 - y) / P.H;
-    let inside = z > 0.01;
+    let inside = true;
     for (let k = 0; inside && k < L.N; k++) { const d = rad(-90 + (360 / L.N) * k); if (x * Math.cos(d) + y * Math.sin(d) > L.Aw + 0.01) inside = false; }
     if (inside) {
       th[v] = T[Math.min(rows - 1, Math.max(0, Math.round(w * (rows - 1)))) * cols + Math.min(cols - 1, Math.max(0, Math.round(u * (cols - 1))))];
@@ -280,10 +284,10 @@ export function placeTop(pos, L, lift = 0) {
   return p;
 }
 
-/** Lid upside down for printing: smooth top face on the bed. */
+/** Lid right side up for printing: the rim, plug ring and flat underside of the photo on the bed, relief facing up. */
 export function topPrintPose(pos, L) {
-  const p = new Float32Array(pos.length);
-  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = -pos[i + 1]; p[i + 2] = L.lidT - pos[i + 2]; }
+  const p = Float32Array.from(pos);
+  for (let i = 2; i < p.length; i += 3) p[i] += L.lidG;
   return p;
 }
 
@@ -299,9 +303,9 @@ export function placeWall(pos, L, k, lift = 0, out = 0) {
   return p;
 }
 
-/** Lay a front wall flat for printing: smooth outer face on the bed, relief facing up. */
+/** Lay a front wall flat for printing: flat inner face on the bed, relief (the outside of the lamp) facing up. */
 export function printPose(pos, L) {
   const p = new Float32Array(pos.length);
-  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = L.HW - pos[i + 2]; p[i + 2] = pos[i + 1] + L.A; }
+  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = pos[i + 2]; p[i + 2] = TE - L.A - pos[i + 1]; }
   return p;
 }

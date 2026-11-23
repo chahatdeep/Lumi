@@ -1101,7 +1101,7 @@ function buildLampPane() {
       btn('Export lamp kit (.zip)', 'download', doLampExport),
       btn('Export fit test (.zip)', 'wand', doLampFitTest, 'btn'),
       el('div', { class: 'hint' }, 'Print the fit test first: 20 mm slices of every wall plus thin rings of the base slot and the top, with the same joints as the real parts. It takes about an hour and uses little filament.'),
-      el('div', { class: 'note' }, 'ZIP with one STL per wall and the top (laid flat, ready to print), the LED base, and assembly steps. Walls: white PLA, smooth face down, 100% infill, 0.12 mm layers.')),
+      el('div', { class: 'note' }, 'ZIP with one STL per wall and the top (laid flat, ready to print), the LED base, and assembly steps. Walls: white PLA, flat inner face down, 100% infill, 0.12 mm layers. Photos are flat inside the lamp, relief outside.')),
   );
   panes.lamp = { el: pane, form: f };
 }

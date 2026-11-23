@@ -168,6 +168,7 @@ input[type="range"] { flex: 1; accent-color: #ff9f0a; cursor: pointer; }
 .tseg button:hover { color: var(--text); }
 .tseg button[aria-pressed="true"] { background: var(--tile); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 1px rgba(0, 0, 0, .06); }
 :root[data-theme="dark"] .tseg button[aria-pressed="true"] { background: #3a3a3c; }
+.tseg button:focus, .tour-switch:focus { outline: none; }
 .tseg button:focus-visible, .tour-switch:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .tour-frame { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; background: #10141c; margin: auto 0 0; padding: 0; border: 0; }
 .tour-frame-wide { aspect-ratio: 16 / 9; }
@@ -179,7 +180,8 @@ input[type="range"] { flex: 1; accent-color: #ff9f0a; cursor: pointer; }
 .tour-pill i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .25s; }
 .tour-switch[aria-pressed="true"] .tour-pill i { background: var(--glow-a); }
 .tour-switch[aria-pressed="true"] .tour-pill i::after { transform: translateX(12px); }
-.tour-light .tour-frame { flex: 1; aspect-ratio: auto; min-height: 260px; }
+.tour-light .tour-frame { flex: 1; aspect-ratio: 3 / 4; min-height: 0; background: linear-gradient(#171a22, #0d0f14); }
+.tour-light .tour-frame img { object-fit: contain; }   /* the whole panel, never a cropped strip */
 
 /* app embed */
 .device { max-width: 1200px; margin: 56px auto 0; padding: 0 22px; }
@@ -263,7 +265,7 @@ input[type="range"] { flex: 1; accent-color: #ff9f0a; cursor: pointer; }
   .bento { grid-template-columns: 1fr 1fr; }
   .tour-grid { grid-template-columns: 1fr; }
   .tour-grid .b-wide { grid-column: auto; }
-  .tour-light .tour-frame { aspect-ratio: 4 / 3; flex: none; min-height: 0; }
+  .tour-light .tour-frame { aspect-ratio: 3 / 4; flex: none; max-height: 78vh; }
   .b-wide { grid-column: span 2; }
   .steps { grid-template-columns: 1fr 1fr; }
   .build { grid-template-columns: 1fr; }

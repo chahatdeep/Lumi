@@ -24,7 +24,8 @@ const DEFAULTS = {
   popWidth: 100, popDepth: 12, popBase: 2, popBack: 0, popRound: 2, popCurve: 1, popSmooth: 0.4, popRes: 0.3, popInvert: false, popOrient: 'lying',
   popAI: 'hunyuan2', popLocalModel: 'turbo', popSteps: 30, popOctree: 256, popSeed: 1234,
   popMinPart: 2, popFill: 300, popCut: 0, popHeight: 80, popRescale: true, popMaxTris: 400000, popColor: '#e9dccb',
-  lampSides: 5, lampFaceW: 78, lampWinH: 94, lampLed: 'bambu001', lampLedD: 59, lampLedH: 8, lampView: 'assembled',
+  lampSides: 4, lampFaceW: 80, lampWinH: 94, lampLed: 'bambu001', lampLedD: 59, lampLedH: 8, lampView: 'exploded',
+  lampMinThick: 0.8, lampMaxThick: 2.6,
   lampClr: 0.18, lampMiter: 0.1, lampGroove: 0.25, lampMaxTris: 300000, lampJoint: 'dovetail', lampGrip: 0.15,
   fileName: '', printOrient: 'flat', format: 'stl', optimize: 'balanced', capTriangles: true, maxTriangles: 600000, material: 'pla',
 };
@@ -43,7 +44,7 @@ const GROUPS = {
     'popCurve', 'popSmooth', 'popRes', 'popInvert', 'popOrient', 'popAI', 'popLocalModel', 'popSteps', 'popOctree', 'popSeed'],
   popClean: ['popMinPart', 'popFill', 'popCut', 'popHeight', 'popRescale', 'popMaxTris', 'popColor'],
   export: ['fileName', 'printOrient', 'format', 'optimize', 'capTriangles', 'maxTriangles', 'material'],
-  lamp: ['lampSides', 'lampFaceW', 'lampWinH', 'lampLed', 'lampLedD', 'lampLedH', 'lampView', 'lampClr', 'lampMiter', 'lampGroove', 'lampMaxTris', 'lampJoint', 'lampGrip'],
+  lamp: ['lampSides', 'lampFaceW', 'lampWinH', 'lampLed', 'lampLedD', 'lampLedH', 'lampView', 'lampMinThick', 'lampMaxThick', 'lampClr', 'lampMiter', 'lampGroove', 'lampMaxTris', 'lampJoint', 'lampGrip'],
 };
 const ORIENT_KEYS = new Set(['rotate', 'flipH', 'flipV']);
 const IMAGE_KEYS = new Set([...GROUPS.transform, ...GROUPS.adjust, ...GROUPS.text]);
@@ -113,7 +114,7 @@ function afterChange(keys) {
   if (orientChanged) { oriented = null; }
   if (imageChanged) scheduleImage();
   else if (meshChanged) scheduleMesh();
-  if ([...keys].some((k) => VIEW_KEYS.has(k)) || keys.has('minThick') || keys.has('maxThick') || keys.has('attenuation')) applyLighting();
+  if ([...keys].some((k) => VIEW_KEYS.has(k)) || keys.has('minThick') || keys.has('maxThick') || keys.has('lampMinThick') || keys.has('lampMaxThick') || keys.has('attenuation')) applyLighting();
   syncAll();
   store.set('lumi.settings', state);
 }
@@ -846,7 +847,7 @@ const lampUI = {};
 
 function lampParams() {
   const led = state.lampLed === 'custom' ? { label: 'Custom LED puck', d: state.lampLedD, h: state.lampLedH } : LED_KITS[state.lampLed];
-  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, joint: state.lampJoint, grip: state.lampGrip, maxThick: state.maxThick, led };
+  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, joint: state.lampJoint, grip: state.lampGrip, maxThick: state.lampMaxThick, led };
 }
 function lampSrc(k) { return (k === 'top' ? lampTop?.src : lampPhotos[k]?.src) || source; }
 const lampOwn = () => lampPhotos.some(Boolean) || !!lampTop;
@@ -866,8 +867,11 @@ function lampCanvas(src, [aw, ah], maxDim = 1400) {
   return process(orient(c, s), s).canvas;
 }
 
+// the lamp has its own min/max thickness (thinner than flat lithophanes by default: the LED is close and bright)
+const lampThickState = () => ({ ...state, minThick: state.lampMinThick, maxThick: state.lampMaxThick });
+
 function lampThickness(L, grid) {
-  const cols = Math.round(L.IW / grid) + 1, rows = Math.round(L.IH / grid) + 1, map = thicknessMapper(state);
+  const cols = Math.round(L.IW / grid) + 1, rows = Math.round(L.IH / grid) + 1, map = thicknessMapper(lampThickState());
   const thick = [];
   for (let k = 0; k < L.N; k++) {
     const g = sampleGrid(lampCanvas(lampSrc(k), lampAspect(L, k)), cols, rows);
@@ -1081,8 +1085,8 @@ function buildLampPane() {
       f.slider('lampLedH', 'Puck height', 3, 30, 0.5, 'mm', { show: (s) => s.lampLed === 'custom' }),
       f.slider('lampFaceW', 'Wall width', 40, 200, 1, 'mm', { tip: 'Outer width of each wall. Raised automatically if the LED would not fit.' }),
       f.slider('lampWinH', 'Photo height', 40, 200, 1, 'mm'),
-      f.slider('minThick', 'Min thick', 0.4, 3, 0.05, 'mm', { tip: 'Brightest areas. Below about 0.6 mm the walls get fragile and can show layer gaps.' }),
-      f.slider('maxThick', 'Max thick', 1, 5, 0.05, 'mm', { tip: 'Darkest areas. Raise it for a bright LED so shadows stay dark; the top thickens to match.' }),
+      f.slider('lampMinThick', 'Min thick', 0.4, 3, 0.05, 'mm', { tip: 'Brightest areas. Below about 0.6 mm the walls get fragile and can show layer gaps.' }),
+      f.slider('lampMaxThick', 'Max thick', 1, 5, 0.05, 'mm', { tip: 'Darkest areas. Raise it for a bright LED so shadows stay dark; the top thickens to match.' }),
       f.seg('lampJoint', 'Joints', [['dovetail', 'Dovetail'], ['push', 'Push-fit']], { tip: 'Dovetail: the walls slide together edge to edge, then drop into the base. Push-fit: each wall pushes straight down into the base. The top presses on either way.' }),
       f.seg('lampView', 'Preview', [['assembled', 'Assembled'], ['exploded', 'Exploded']]),
       info),
@@ -1116,6 +1120,7 @@ function setTab(t) {
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
   for (const [k, p] of Object.entries(panes)) p.el.classList.toggle('hidden', k !== t);
   viewer.setScene(t === 'pop' ? 'pop' : t === 'lamp' ? 'lamp' : 'litho');
+  applyLighting();                                   // the lamp shades with its own thickness range
   if (t === 'lamp') scheduleLamp(0);
   if (t === 'edit') setView('2d');
   else if (t === 'model' || t === 'export' || t === 'pop' || t === 'lamp') setView('3d');
@@ -1303,7 +1308,8 @@ function applyLighting() {
   viewer.setLighting({
     mode: state.lighting, lightColor: state.lightColor, materialColor: state.materialColor,
     intensityMin: state.intensityMin, intensityMax: state.intensityMax,
-    tmin: state.minThick, tmax: Math.max(state.maxThick, state.minThick + 0.01), attenuation: state.attenuation,
+    ...(() => { const s = tab === 'lamp' ? lampThickState() : state; return { tmin: s.minThick, tmax: Math.max(s.maxThick, s.minThick + 0.01) }; })(),
+    attenuation: state.attenuation,
   });
   stage.classList.toggle('backlit', view === '3d' && state.lighting === 'back' && tab !== 'pop');
   const gridDark = isDark || state.lighting === 'back';

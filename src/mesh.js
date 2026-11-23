@@ -279,7 +279,10 @@ export function buildModel(s, gray, mode = 'preview') {
   }
 
   // ---------- surface: base point and normal per vertex ----------
-  const sign = s.inside ? -1 : 1;
+  // The side facing the light (inside a lamp, the back of a flat or curved panel, where the night light, lamp
+  // fitting and stand sit) stays planar; the relief faces out. Base normals point out (+radial) on round shapes
+  // and to the back (+Y) on panels, so panels grow toward the viewer (-Y). 'Relief inside' swaps this.
+  const sign = (s.shape === 'plane' || s.shape === 'curve' ? -1 : 1) * (s.inside ? -1 : 1);
   const colX = new Float64Array(cols), colY = new Float64Array(cols), colNX = new Float64Array(cols), colNY = new Float64Array(cols);
   let sphere = null, axis = false, R = 0;
   if (s.shape === 'plane') {

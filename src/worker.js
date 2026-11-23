@@ -19,8 +19,8 @@ const OPTIMIZE = {
 };
 
 // Rotate an upright panel so its flat face lies on the bed (Z = 0).
-function layFlat(pos, inside) {
-  const sg = inside ? -1 : 1; // flat side faces -Y normally, +Y when the relief is on the front
+function layFlat(pos, reliefBack) {
+  const sg = reliefBack ? 1 : -1; // the flat face is at the front (-Y) when the relief is on the back, else at the back
   let zMin = Infinity, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (let i = 0; i < pos.length; i += 3) {
     const y = pos[i + 1], z = pos[i + 2];
@@ -80,7 +80,7 @@ self.onmessage = (e) => {
       progress('Building full-resolution mesh', 0.05);
       const m = buildModel(s, msg.gray, 'export');
       let pos = m.pos, idx = m.idx;
-      if (s.printOrient === 'flat' && s.shape === 'plane' && !s.stand && !s.nightlight && !s.lamp) layFlat(pos, s.inside);
+      if (s.printOrient === 'flat' && s.shape === 'plane' && !s.stand && !s.nightlight && !s.lamp) layFlat(pos, s.inside); // panels: relief on the back only with 'Relief inside'
       const rawTris = idx.length / 3;
       const opt = OPTIMIZE[s.optimize];
       const cap = s.capTriangles ? s.maxTriangles : Infinity;

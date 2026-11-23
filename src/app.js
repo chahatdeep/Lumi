@@ -282,7 +282,7 @@ function buildModelPane() {
       f.slider('maxThick', 'Max thick', 1, 8, 0.05, 'mm', { tip: 'Darkest areas' }),
       f.seg('mapping', 'Tone curve', [['linear', 'Linear'], ['light', 'Light-accurate']], { tip: 'Light-accurate compensates for exponential light absorption, for truer mid-tones' }),
       f.slider('attenuation', 'Filament opacity', 0.3, 3, 0.05, '/mm', { tip: 'How quickly light fades through your filament. White PLA ≈ 1.0' }),
-      f.toggle('inside', 'Relief inside', { tip: 'Put the textured side inside (lamps) or facing you (flat)' }),
+      f.toggle('inside', 'Relief inside', { tip: 'Off (recommended): the side facing the light is flat and the relief faces out. On: the relief faces the light.' }),
       f.group('Outline', { show: flat }),
       f.tiles('outline', [['rect', 'Rect', 'ol-rect'], ['rounded', 'Rounded', 'ol-rounded'], ['ellipse', 'Oval', 'ol-ellipse'], ['heart', 'Heart', 'ol-heart'],
         ['hexagon', 'Hexagon', 'ol-hexagon'], ['octagon', 'Octagon', 'ol-octagon'], ['star', 'Star', 'ol-star'], ['arch', 'Arch', 'ol-arch']], { small: true, show: flat }),

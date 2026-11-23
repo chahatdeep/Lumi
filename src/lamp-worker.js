@@ -1,6 +1,6 @@
 // Lamp kit worker: exact CSG with manifold-3d (WebAssembly) off the UI thread.
 import Module from './vendor/manifold.js';
-import { lampLayout, buildLamp, wallThickness, printPose, topThickness, topPrintPose } from './lampkit.js';
+import { lampLayout, buildLamp, wallThickness, printPose, topThickness, topPrintPose, fitLayout } from './lampkit.js';
 import { simplifyMesh } from './simplify.js';
 import { toSTLBinary } from './exporters.js';
 import { zipSync, strToU8 } from './vendor/fflate.js';
@@ -32,6 +32,43 @@ function dropTwins(idx) {
   return Uint32Array.from(out);
 }
 
+// put a part on the bed (z = 0)
+function onBed(pos) {
+  let z0 = Infinity;
+  for (let i = 2; i < pos.length; i += 3) z0 = Math.min(z0, pos[i]);
+  const p = Float32Array.from(pos);
+  for (let i = 2; i < p.length; i += 3) p[i] -= z0;
+  return p;
+}
+
+function fitReadme(L, name) {
+  return [
+    `${name}: fit test for a ${L.N}-sided Lumi lamp (${L.joint === 'push' ? 'push-fit' : 'dovetail'} joints)`,
+    '',
+    'Print these short parts before the full lamp. They have exactly the same joints as the real parts,',
+    'so if they fit, the lamp will. Use the same printer, filament and settings you will use for the walls.',
+    '',
+    `Parts: wall-1 ... wall-${L.N}.stl (${L.HW} mm slices of the walls), base-ring.stl (the base slot) and top-ring.stl (the groove under the top).`,
+    '',
+    'Check',
+    L.joint === 'push'
+      ? '  1. Push each wall slice into the base ring. It should need a firm push and then stay put.'
+      : `  1. Slide the wall slices together in order (1 -> 2 -> ... -> ${L.N}). They should slide by hand with no wobble.`,
+    L.joint === 'push' ? null : '     Close the ring with the last slice: it has to engage both neighbours at once.',
+    '  2. Drop the ring of walls into the base ring. It should drop in by hand and not rock.',
+    '  3. Press the top ring on. It should go down all the way and hold the wall tops together.',
+    '',
+    'Adjust (Lumi > Lamp > Fit), then export the full lamp',
+    L.joint === 'push'
+      ? '  Walls loose in the slots: raise Push-fit grip. Too hard to push: lower it.'
+      : '  Dovetails tight or binding: raise Dovetail gap by 0.05 mm. Wobbly: lower it.',
+    '  Ring or top will not go on: raise Slot gap by 0.05 mm. Loose: lower it.',
+    '  Corners pinch before the ring closes: raise Corner gap.',
+    '',
+    `These settings: dovetail gap ${L.clr} mm, corner gap ${L.miter} mm, slot gap ${L.grooveClr} mm${L.joint === 'push' ? `, grip ${L.grip} mm` : ''}.`,
+  ].filter((l) => l !== null).join('\n');
+}
+
 function readme(L, name) {
   return [
     `${name}: ${L.N}-sided Lumi lithophane lamp`,
@@ -47,12 +84,21 @@ function readme(L, name) {
     '',
     'Assemble',
     '  1. Press the LED puck into the base pocket, USB-C port toward the cable slot at the back.',
-    `  2. Slide the walls together in order (1 -> 2 -> ... -> ${L.N}): each wall's channel slides down over the previous wall's rail.`,
-    `  3. Slide wall ${L.N} down so it engages wall ${L.N - 1} and wall 1 at once, closing the ring.`,
-    '  4. Lower the ring into the groove in the base. Lift it off to reach the LED (finger notch at the front).',
-    '  5. Press the top on: the wall tops drop into the groove under it, locking the ring at the top too.',
+    ...(L.joint === 'push' ? [
+      `  2. Push each wall straight down into its slot in the base, photo relief facing in (wall 1 at the front, by the finger notch;`,
+      `     the rest go round to its right). Two small ribs in each slot grip the wall.`,
+      '  3. Press the top down over the wall tops: they drop into the slot under it, which holds the corners together.',
+      '  To reach the LED, pull the top off, then lift a wall out.',
+    ] : [
+      `  2. Slide the walls together in order (1 -> 2 -> ... -> ${L.N}): each wall's channel slides down over the previous wall's rail.`,
+      `  3. Slide wall ${L.N} down so it engages wall ${L.N - 1} and wall 1 at once, closing the ring.`,
+      '  4. Lower the ring into the groove in the base. Lift it off to reach the LED (finger notch at the front).',
+      '  5. Press the top on: the wall tops drop into the groove under it, locking the ring at the top too.',
+    ]),
     '',
-    `Fit: dovetail clearance ${L.clr} mm, mitre gap ${L.miter} mm, groove clearance ${L.grooveClr} mm (adjustable in Lumi > Lamp > Fit).`,
+    L.joint === 'push'
+      ? `Fit: rib grip ${L.grip} mm, mitre gap ${L.miter} mm, slot clearance ${L.grooveClr} mm (adjustable in Lumi > Lamp > Fit).`
+      : `Fit: dovetail clearance ${L.clr} mm, mitre gap ${L.miter} mm, groove clearance ${L.grooveClr} mm (adjustable in Lumi > Lamp > Fit).`,
     'Made with Lumi: https://chahatdeep.github.io/Lumi/',
   ].join('\n');
 }
@@ -72,6 +118,22 @@ self.onmessage = async (e) => {
       const top = r.top && { ...r.top, thick: topThickness(r.top.pos, L, msg.top.T, msg.top.cols, msg.top.rows) };
       if (top) transfer.push(top.pos.buffer, top.idx.buffer, top.thick.buffer);
       self.postMessage({ type: 'lamp', id: msg.id, layout: L, walls, base: r.base, top, report: { ...r.report, ms: performance.now() - t0 } }, transfer);
+    } else if (msg.type === 'fittest') {
+      const F = fitLayout(L);
+      self.postMessage({ type: 'progress', stage: 'Building the fit test', p: 0.2 });
+      const r = buildLamp(Mk, F, null, 0, 0, { T: new Float32Array(1), cols: 1, rows: 1 });
+      const files = {}, stats = { walls: [], closed: true };
+      r.walls.forEach((w, k) => {
+        stats.closed = stats.closed && isClosed(w.idx);
+        files[`wall-${k + 1}.stl`] = toSTLBinary(onBed(printPose(w.pos, F)), w.idx, `${msg.name} fit wall ${k + 1}`);
+      });
+      stats.closed = stats.closed && isClosed(r.base.idx) && isClosed(r.top.idx);
+      files['base-ring.stl'] = toSTLBinary(onBed(r.base.pos), r.base.idx, `${msg.name} fit base ring`);
+      files['top-ring.stl'] = toSTLBinary(onBed(topPrintPose(r.top.pos, F)), r.top.idx, `${msg.name} fit top ring`);
+      files['README.txt'] = strToU8(fitReadme(F, msg.name));
+      const tri = r.walls.reduce((a, w) => a + w.idx.length / 3, 0) + r.base.idx.length / 3 + r.top.idx.length / 3;
+      const data = zipSync(files, { level: 6 });
+      self.postMessage({ type: 'file', data, stats: { ...stats, triangles: tri, bytes: data.length } }, [data.buffer]);
     } else if (msg.type === 'export') {
       const progress = (stage, p) => self.postMessage({ type: 'progress', stage, p });
       progress('Building the plates', 0.05);

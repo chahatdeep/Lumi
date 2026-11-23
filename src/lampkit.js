@@ -1,6 +1,7 @@
 // Lamp kit: an N-sided lamp (3-6 walls) of flat lithophane plates that lock together, plus a base for a
 // round LED puck (default: Bambu Lab LED Lamp Kit 001, D59 x 8 mm).
-//   walls  mitred edges joined by sliding dovetails (rail on the right edge, channel on the left edge)
+//   walls  mitred edges; joint 'push' (default): plain plates pushed into the base and top slots, held by grip ribs;
+//          joint 'dovetail': plates also joined by sliding dovetails (rail on the right edge, channel on the left edge)
 //   base   LED pocket, cable slot at the back, finger notch at the front, and a groove the wall bottoms drop into
 //   top    an N-sided lithophane lid; the wall tops drop into a groove on its underside, locking the ring at both ends
 // Geometry is exact CSG (manifold-3d); every part comes out watertight. Units: mm, Z up.
@@ -21,6 +22,10 @@ const LID_G = 3.0;        // depth the wall tops sit in the lid groove (less tha
 const LID_T = 3.6;        // lid plate thickness above the wall tops (>= the thickest lithophane pixel)
 const LID_RIM = 2.4;      // lid wall outside the groove
 const LID_PLUG = 2.0;     // inner locating ring inside the walls
+const FIT_H = 20;         // fit test: wall slice height
+const FIT_ROOF = 1.2;     // fit test: roof over the lid groove / floor under the base groove
+const FIT_RING = 3.0;     // fit test: ring width inside the walls
+const RIB_R = 0.8;        // grip ribs in the push-fit slots (vertical half-round ribs on the outer slot wall)
 
 const rad = (d) => (d * Math.PI) / 180;
 const polar = (r, deg) => [r * Math.cos(rad(deg)), r * Math.sin(rad(deg))];
@@ -34,7 +39,7 @@ export function lampLayout(o) {
   const minW = 2 * minA * tan;
   const W = Math.max(o.faceW, minW);
   const A = W / (2 * tan), R = A / cos;
-  const clr = o.clr;
+  const clr = o.clr, joint = o.joint || 'dovetail';
   // place the dovetail where the thinnest skin around its channel is largest
   const margins = (rj, sb) => {
     const d = polar(1, -90 - half), m = [-d[1], d[0]], c = [rj * d[0], rj * d[1]];
@@ -47,8 +52,8 @@ export function lampLayout(o) {
   };
   let rj = R, best = -Infinity;
   for (let r = (A - TE) / cos; r <= R; r += 0.01) { const mm = Math.min(...margins(r, 0).slice(0, 2)); if (mm > best) { best = mm; rj = r; } }
-  if (best < 0.6) throw new Error('The dovetail does not fit in the wall corners');
-  let sb = 3; while (margins(rj, sb)[2] < 0.8) sb += 0.1;
+  if (joint === 'dovetail' && best < 0.6) throw new Error('The dovetail does not fit in the wall corners');
+  let sb = 3; while (joint === 'dovetail' && margins(rj, sb)[2] < 0.8) sb += 0.1;
   sb = Math.max(sb, 5.5);
   const IW = W - 2 * sb, IH = o.windowH, HW = IH + TB + BB;
   const pocketTop = FLOOR + led.h + 2;
@@ -58,7 +63,7 @@ export function lampLayout(o) {
   const tx0 = Math.min(...corners.map((c) => c[0])), tx1 = Math.max(...corners.map((c) => c[0]));
   const ty0 = Math.min(...corners.map((c) => c[1])), ty1 = Math.max(...corners.map((c) => c[1]));
   return { N, half, tan, cos, W, minW, A, R, rj, sb, IW, IH, HW, led, pocketD, pocketTop, baseH: pocketTop + G_DEPTH,
-    clr, miter: o.miterClr, grooveClr: o.grooveClr, skins: best,
+    clr, miter: o.miterClr, grooveClr: o.grooveClr, skins: best, joint, grip: o.grip ?? 0.15,
     Aw, top: { x0: tx0, x1: tx1, y0: ty0, y1: ty1, W: tx1 - tx0, H: ty1 - ty0 }, lidG: LID_G, lidT: LID_T,
     lidA: A + o.grooveClr + LID_RIM, height: pocketTop + HW + LID_T };
 }
@@ -114,18 +119,36 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
 
   function wall(T) {
     const y0 = -L.A;
-    const frame = box(-L.W, L.W, y0, y0 + TE, 0, L.HW).subtract(box(-L.IW / 2, L.IW / 2, y0 - 1, y0 + TE + 1, BB, BB + L.IH));
-    keep(frame);
-    let body = keep(frame.add(heightfield(T)));
+    let body;
+    if (L.fit) body = box(-L.W, L.W, y0, y0 + TE, 0, L.HW);             // fit test: a short solid slice, same edges
+    else {
+      const frame = keep(box(-L.W, L.W, y0, y0 + TE, 0, L.HW).subtract(box(-L.IW / 2, L.IW / 2, y0 - 1, y0 + TE + 1, BB, BB + L.IH)));
+      body = keep(frame.add(heightfield(T)));
+    }
     const dl = polar(1, -90 - L.half), dr = polar(1, -90 + L.half);
     const ml = [-dl[1], dl[0]], mr = [dr[1], -dr[0]];                     // inward normals of the miter edges
     const apex = [0, -L.miter / Math.sin(rad(L.half))];
     const wedge = prism([apex, [400 * dl[0] + L.miter * ml[0], 400 * dl[1] + L.miter * ml[1]],
       [400 * dr[0] + L.miter * mr[0], 400 * dr[1] + L.miter * mr[1]]], -1, L.HW + 1);
     body = keep(body.intersect(wedge));
-    body = keep(body.add(rail(-90 + L.half, 0, 0, L.HW)));                  // rail on the right edge
-    body = keep(body.subtract(rail(-90 - L.half, L.clr, -1, L.HW + 1)));    // channel on the left edge
+    if (L.joint === 'dovetail') {
+      body = keep(body.add(rail(-90 + L.half, 0, 0, L.HW)));                // rail on the right edge
+      body = keep(body.subtract(rail(-90 - L.half, L.clr, -1, L.HW + 1)));  // channel on the left edge
+    }
     return body;
+  }
+
+  // push-fit: two vertical half-round ribs per wall on the outer slot wall, pressing grip mm into the plate.
+  // They stop 1 mm short of the slot mouth so a plate starts in easily, then tightens as it is pushed home.
+  function ribs(z0, z1) {
+    let all = null;
+    for (let k = 0; k < L.N; k++) for (const u of [-0.25, 0.25]) {
+      const a = -90 + (360 / L.N) * k, n = polar(1, a), t = [-n[1], n[0]];
+      const c = L.A - L.grip + RIB_R, x = n[0] * c + t[0] * u * L.W, y = n[1] * c + t[1] * u * L.W;
+      const r = keep(Manifold.cylinder(z1 - z0, RIB_R, RIB_R, 24).translate([x, y, z0]));
+      all = all ? keep(all.add(r)) : r;
+    }
+    return all;
   }
 
   function base() {
@@ -138,16 +161,24 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
     const slot = keep(box(-7, 7, 0, L.A + 30, FLOOR, FLOOR + L.led.h + 0.5).rotate([0, 0, back - 90]));
     const notch = keep(Manifold.cylinder(L.baseH, 7.5, 7.5, 48).translate([0, -(L.pocketD / 2 - 1.5), FLOOR + 3]));
     for (const cut of [groove, pocket, slot, notch]) b = keep(b.subtract(cut));
+    if (L.joint === 'push') b = keep(b.add(ribs(L.pocketTop - 0.5, L.baseH - 1)));
+    if (L.fit) {                                       // fit test: just the slot, as a ring
+      b = keep(b.subtract(prism(ngon(L.A - TE - L.grooveClr - FIT_RING), -1, L.baseH + 1)));
+      b = keep(b.intersect(box(-500, 500, -500, 500, L.pocketTop - FIT_ROOF, L.baseH + 1)));
+    }
     return b;
   }
 
   function lid(T, tc, tr) {
     // lid frame: z = 0 is the wall tops; the groove runs from -LID_G to 0, the plate from 0 to LID_T
     const outline = keep(keep(keep(new CrossSection([ngon(L.lidA)], 'EvenOdd')).offset(-6, 'Round', 2, 48)).offset(6, 'Round', 2, 48));
-    let b = keep(keep(outline.extrude(LID_G + LID_T)).translate([0, 0, -LID_G]));
+    const roof = L.fit ? FIT_ROOF : LID_T;
+    let b = keep(keep(outline.extrude(LID_G + roof)).translate([0, 0, -LID_G]));
     const groove = keep(prism(ngon(L.A + L.grooveClr), -LID_G - 1, 0).subtract(prism(ngon(L.A - TE - L.grooveClr), -LID_G - 2, 1)));
     b = keep(b.subtract(groove));
     b = keep(b.subtract(prism(ngon(L.Aw), -LID_G - 1, LID_T + 1)));
+    if (L.joint === 'push') b = keep(b.add(ribs(-LID_G + 1, 0.5)));
+    if (L.fit) return b;                               // fit test: the groove ring without the photo
     // photo slab: flat outer face on top (z = LID_T), relief underneath, clipped to the opening
     const ov = 0.6, nx = tc + 2, ny = tr + 2, P = L.top;
     const x0 = P.x0 - ov, x1 = P.x1 + ov, y0 = P.y0 - ov, y1 = P.y1 + ov;
@@ -182,7 +213,7 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
   const out = { walls: [], base: null, top: null, report: { volumes: [], genus: [] } };
   try {
     for (let k = 0; k < L.N; k++) {
-      const w = wall(thick[k]);
+      const w = wall(thick?.[k]);
       out.report.volumes.push(w.volume()); out.report.genus.push(w.genus());
       out.walls.push(meshOf(w));
       free();                                         // full-resolution walls are large: free as we go
@@ -209,6 +240,9 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
     return { pos, idx: Uint32Array.from(g.triVerts) };
   }
 }
+
+/** Layout for the fit test: every joint of the lamp at full size, on short wall slices and thin rings. */
+export const fitLayout = (L) => ({ ...L, HW: FIT_H, fit: true });
 
 /** Per-vertex thickness for backlit preview shading (front-wall coordinates). */
 export function wallThickness(pos, L, T, cols, rows) {

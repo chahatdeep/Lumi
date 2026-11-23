@@ -20,7 +20,8 @@ Lumi is a Windows desktop app (Electron + Three.js) that turns your photos into 
 
 **Lamp kit (Lamp tab)**
 - **What it is:** a 3-, 4-, 5- or 6-sided lamp made of flat lithophane walls plus a lithophane **top**, one photo per wall and one for the top. Click a slot or drop a photo on it.
-- **How it locks:** the walls join with **sliding dovetails** on their mitred edges and drop into a groove in a **base** that holds a round LED puck. The top has a matching groove underneath, so it caps and locks the wall tops. Nothing is glued.
+- **How it goes together:** by default the walls join with **sliding dovetails** on their mitred edges, and the ring drops into a slot in the **base**, which holds a round LED puck. The top has a matching slot underneath and presses on over the wall tops. Or choose **push-fit**: each wall pushes straight down into the base, gripped by small ribs. Nothing is glued.
+- **Fit test:** export 20 mm slices of every wall plus thin rings of the base slot and the top. They have the same joints as the real parts, so you can check and tune the fit in under an hour before printing the lamp.
 - **LED:** the base is sized for the Bambu Lab LED Lamp Kit 001 (Ø59 × 8 mm) by default, or any custom puck size.
 - **Geometry:** the parts are built with exact CSG (manifold-3d), so every part is watertight. Each wall is optimized to stay slicer-friendly.
 - **Export:** one ZIP with an STL per wall and for the top (laid flat for printing), the LED base, and assembly steps. You can preview the lamp assembled or exploded, and tune the joint clearances.
@@ -137,9 +138,9 @@ The real-light renders on the site come from `build/render/`:
 1. Pick **3, 4, 5 or 6 sides** and the LED, which is the Bambu Lab LED Lamp Kit 001 by default.
 2. Give each wall and the top a photo: click a slot, or drop a photo on it. Empty slots use the Image tab's photo, and the Edit adjustments apply to every wall.
 3. Check the lamp in the **Assembled** and **Exploded** previews. Adjust the clearances under **Fit** if your printer prints tight.
-4. Click **Export lamp kit (.zip)**.
+4. Click **Export fit test (.zip)** and print it first. If the joints are tight or loose, adjust **Fit** and test again. Then click **Export lamp kit (.zip)**.
 5. Print the walls and the top flat with the smooth face down, at 100% infill, in white PLA. Print the base in any colour.
-6. Assemble: put the LED in the base, slide the walls together, drop the ring into the base, then press the top on.
+6. Assemble: put the LED in the base, slide the walls together, drop the ring into the base, then press the top on. With push-fit joints, push each wall down into its slot in the base instead.
 
 ### Make a 3D model (Pop 3D)
 

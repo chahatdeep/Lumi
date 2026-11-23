@@ -25,7 +25,7 @@ const DEFAULTS = {
   popAI: 'hunyuan2', popLocalModel: 'turbo', popSteps: 30, popOctree: 256, popSeed: 1234,
   popMinPart: 2, popFill: 300, popCut: 0, popHeight: 80, popRescale: true, popMaxTris: 400000, popColor: '#e9dccb',
   lampSides: 5, lampFaceW: 78, lampWinH: 94, lampLed: 'bambu001', lampLedD: 59, lampLedH: 8, lampView: 'assembled',
-  lampClr: 0.18, lampMiter: 0.1, lampGroove: 0.25, lampMaxTris: 300000,
+  lampClr: 0.18, lampMiter: 0.1, lampGroove: 0.25, lampMaxTris: 300000, lampJoint: 'dovetail', lampGrip: 0.15,
   fileName: '', printOrient: 'flat', format: 'stl', optimize: 'balanced', capTriangles: true, maxTriangles: 600000, material: 'pla',
 };
 
@@ -43,7 +43,7 @@ const GROUPS = {
     'popCurve', 'popSmooth', 'popRes', 'popInvert', 'popOrient', 'popAI', 'popLocalModel', 'popSteps', 'popOctree', 'popSeed'],
   popClean: ['popMinPart', 'popFill', 'popCut', 'popHeight', 'popRescale', 'popMaxTris', 'popColor'],
   export: ['fileName', 'printOrient', 'format', 'optimize', 'capTriangles', 'maxTriangles', 'material'],
-  lamp: ['lampSides', 'lampFaceW', 'lampWinH', 'lampLed', 'lampLedD', 'lampLedH', 'lampView', 'lampClr', 'lampMiter', 'lampGroove', 'lampMaxTris'],
+  lamp: ['lampSides', 'lampFaceW', 'lampWinH', 'lampLed', 'lampLedD', 'lampLedH', 'lampView', 'lampClr', 'lampMiter', 'lampGroove', 'lampMaxTris', 'lampJoint', 'lampGrip'],
 };
 const ORIENT_KEYS = new Set(['rotate', 'flipH', 'flipV']);
 const IMAGE_KEYS = new Set([...GROUPS.transform, ...GROUPS.adjust, ...GROUPS.text]);
@@ -846,7 +846,7 @@ const lampUI = {};
 
 function lampParams() {
   const led = state.lampLed === 'custom' ? { label: 'Custom LED puck', d: state.lampLedD, h: state.lampLedH } : LED_KITS[state.lampLed];
-  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, led };
+  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, joint: state.lampJoint, grip: state.lampGrip, led };
 }
 function lampSrc(k) { return (k === 'top' ? lampTop?.src : lampPhotos[k]?.src) || source; }
 const lampOwn = () => lampPhotos.some(Boolean) || !!lampTop;
@@ -914,10 +914,12 @@ function buildLampPreview() {
 
 function showLamp() {
   if (!lampData) return;
-  const L = lampData.layout, ex = state.lampView === 'exploded';
-  const parts = lampData.walls.map((w, k) => ({ pos: placeWall(w.pos, L, k, ex ? 28 : 0, ex ? 30 : 0), idx: w.idx, thick: w.thick }));
+  const L = lampData.layout, ex = state.lampView === 'exploded', push = L.joint === 'push';
+  // exploded: push-fit walls lift straight up out of their slots; dovetail walls also slide apart
+  const lift = ex ? (push ? 40 : 28) : 0, out = ex ? (push ? 8 : 30) : 0;
+  const parts = lampData.walls.map((w, k) => ({ pos: placeWall(w.pos, L, k, lift, out), idx: w.idx, thick: w.thick }));
   parts.push({ pos: lampData.base.pos, idx: lampData.base.idx, thick: new Float32Array(lampData.base.pos.length / 3).fill(50) });
-  if (lampData.top) parts.push({ pos: placeTop(lampData.top.pos, L, ex ? 50 : 0), idx: lampData.top.idx, thick: lampData.top.thick });
+  if (lampData.top) parts.push({ pos: placeTop(lampData.top.pos, L, ex ? lift + 40 : 0), idx: lampData.top.idx, thick: lampData.top.thick });
   let nv = 0, ni = 0;
   for (const p of parts) { nv += p.pos.length / 3; ni += p.idx.length; }
   const pos = new Float32Array(nv * 3), idx = new Uint32Array(ni), thick = new Float32Array(nv);
@@ -987,11 +989,37 @@ function lampStatusBar() {
   const own = lampPhotos.filter(Boolean).length + (lampTop ? 1 : 0);
   return [
     el('span', {}, el('b', {}, `${L.N} walls + top + base`)),
-    el('span', { class: 'pill' }, r.genus.every((g) => g === 0) ? '✓ solid parts · locking joints' : '⚠ check the parts'),
+    el('span', { class: 'pill' }, r.genus.every((g) => g === 0) ? (L.joint === 'push' ? '✓ solid parts · push-fit slots' : '✓ solid parts · locking joints') : '⚠ check the parts'),
     el('span', {}, 'Preview ', el('b', {}, fmtCount(tris)), ' tris'),
     el('span', {}, `built in ${Math.round(r.ms)} ms`),
     el('span', { class: 'right' }, own ? `${own} own photo${own > 1 ? 's' : ''} + ${source ? sourceName : 'no image'}` : (source ? sourceName : 'No image')),
   ];
+}
+
+async function doLampFitTest() {
+  let L;
+  try { L = lampLayout(lampParams()); } catch (e) { toast(e.message); return; }
+  const base = ((state.fileName || sourceName || 'lumi') + `-lamp-${L.N}-fit-test`).replace(/[\\/:*?"<>|]+/g, '_');
+  const name = `${base}.zip`;
+  let filePath = null;
+  if (window.lumi) {
+    filePath = await window.lumi.pickSavePath({ defaultName: name, filters: [{ name: 'Lamp fit test (ZIP of STL files)', extensions: ['zip'] }] });
+    if (!filePath) return;
+  }
+  exportTarget = { filePath, name, t0: performance.now(), pop: true };
+  $('#modal').classList.remove('hidden');
+  $('#modalTitle').textContent = `Exporting ${name}`;
+  $('#modalStage').textContent = 'Building the fit test…';
+  $('#modalBar').style.width = '5%';
+  $('#modalExtra').textContent = '';
+  exportWorker = new Worker(new URL('./lamp-worker.js', import.meta.url), { type: 'module' });
+  exportWorker.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === 'progress') exportProgress(m);
+    else if (m.type === 'file') exportDone(m);
+    else if (m.type === 'error') { toast('Export failed: ' + m.message); closeExport(); }
+  };
+  exportWorker.postMessage({ type: 'fittest', params: lampParams(), name: base });
 }
 
 async function doLampExport() {
@@ -1039,20 +1067,21 @@ function buildLampPane() {
         el('dt', {}, 'Photo window'), el('dd', {}, `${L.IW.toFixed(1)} × ${L.IH.toFixed(0)} mm`),
         el('dt', {}, 'Top photo'), el('dd', {}, `${L.N}-sided lid · ${L.top.W.toFixed(0)} × ${L.top.H.toFixed(0)} mm photo`),
         el('dt', {}, 'Base'), el('dd', {}, `${baseAcross.toFixed(0)} mm across · ${L.baseH.toFixed(0)} mm tall`),
-        el('dt', {}, 'Parts'), el('dd', {}, `${L.N} walls + top + LED base, all locking`)),
+        el('dt', {}, 'Parts'), el('dd', {}, L.joint === 'push' ? `${L.N} walls push into the base and top` : `${L.N} walls + top + LED base, all locking`)),
       lampError ? el('div', { class: 'note' }, '⚠ ' + lampError) : null,
     ].filter(Boolean));
   });
   const btn = (label, icon, onclick, cls = 'btn primary big') => el('button', { class: cls, onclick }, el('span', { html: icons[icon], style: 'display:contents' }), label);
   const pane = el('div', {}, lampUI.file,
     f.card({ title: 'Lamp kit', icon: 'lamp' },
-      el('div', { class: 'note' }, 'Flat lithophane walls that lock together with sliding dovetails, a lithophane top that caps them, and a base that holds a round LED puck. No glue, no supports.'),
+      el('div', { class: 'note' }, 'Flat lithophane walls that lock together (dovetails or push-fit) on an LED base, with a lithophane top that presses on over them. No glue, no supports.'),
       f.seg('lampSides', 'Sides', [[3, '3'], [4, '4'], [5, '5'], [6, '6']]),
       f.select('lampLed', 'LED', [['bambu001', 'Bambu Lab LED Lamp Kit 001 · Ø59 × 8 mm'], ['custom', 'Other round LED puck']]),
       f.slider('lampLedD', 'Puck diameter', 30, 100, 0.5, 'mm', { show: (s) => s.lampLed === 'custom' }),
       f.slider('lampLedH', 'Puck height', 3, 30, 0.5, 'mm', { show: (s) => s.lampLed === 'custom' }),
       f.slider('lampFaceW', 'Wall width', 40, 200, 1, 'mm', { tip: 'Outer width of each wall. Raised automatically if the LED would not fit.' }),
       f.slider('lampWinH', 'Photo height', 40, 200, 1, 'mm'),
+      f.seg('lampJoint', 'Joints', [['dovetail', 'Dovetail'], ['push', 'Push-fit']], { tip: 'Dovetail: the walls slide together edge to edge, then drop into the base. Push-fit: each wall pushes straight down into the base. The top presses on either way.' }),
       f.seg('lampView', 'Preview', [['assembled', 'Assembled'], ['exploded', 'Exploded']]),
       info),
     f.card({ title: 'Photos', icon: 'image' },
@@ -1061,12 +1090,15 @@ function buildLampPane() {
       el('div', { class: 'btns' }, el('button', { class: 'btn', onclick: () => { lampPhotos.length = 0; lampTop = null; scheduleLamp(0); } }, 'Use the Image tab photo everywhere'))),
     f.card({ title: 'Fit', icon: 'wand', open: false },
       el('div', { class: 'hint' }, 'Gaps between the printed parts. Raise them a little if your printer prints tight.'),
-      f.slider('lampClr', 'Dovetail gap', 0.05, 0.5, 0.01, 'mm'),
+      f.slider('lampGrip', 'Push-fit grip', 0, 0.4, 0.01, 'mm', { show: (s) => s.lampJoint === 'push', tip: 'How far the ribs in the slots press into each wall. Raise it if the walls are loose, lower it if they are hard to push in.' }),
+      f.slider('lampClr', 'Dovetail gap', 0.05, 0.5, 0.01, 'mm', { show: (s) => s.lampJoint === 'dovetail' }),
       f.slider('lampMiter', 'Corner gap', 0, 0.4, 0.01, 'mm'),
-      f.slider('lampGroove', 'Groove gap (base + top)', 0.05, 0.6, 0.01, 'mm')),
+      f.slider('lampGroove', 'Slot gap (base + top)', 0.05, 0.6, 0.01, 'mm')),
     f.card({ title: 'Export lamp kit', icon: 'download' },
       f.slider('lampMaxTris', 'Max triangles / wall', 50000, 800000, 10000, '', { tip: 'Each wall is optimized to stay slicer-friendly' }),
       btn('Export lamp kit (.zip)', 'download', doLampExport),
+      btn('Export fit test (.zip)', 'wand', doLampFitTest, 'btn'),
+      el('div', { class: 'hint' }, 'Print the fit test first: 20 mm slices of every wall plus thin rings of the base slot and the top, with the same joints as the real parts. It takes about an hour and uses little filament.'),
       el('div', { class: 'note' }, 'ZIP with one STL per wall and the top (laid flat, ready to print), the LED base, and assembly steps. Walls: white PLA, smooth face down, 100% infill, 0.12 mm layers.')),
   );
   panes.lamp = { el: pane, form: f };

@@ -846,7 +846,7 @@ const lampUI = {};
 
 function lampParams() {
   const led = state.lampLed === 'custom' ? { label: 'Custom LED puck', d: state.lampLedD, h: state.lampLedH } : LED_KITS[state.lampLed];
-  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, joint: state.lampJoint, grip: state.lampGrip, led };
+  return { sides: state.lampSides, faceW: state.lampFaceW, windowH: state.lampWinH, clr: state.lampClr, miterClr: state.lampMiter, grooveClr: state.lampGroove, joint: state.lampJoint, grip: state.lampGrip, maxThick: state.maxThick, led };
 }
 function lampSrc(k) { return (k === 'top' ? lampTop?.src : lampPhotos[k]?.src) || source; }
 const lampOwn = () => lampPhotos.some(Boolean) || !!lampTop;
@@ -1065,7 +1065,7 @@ function buildLampPane() {
         el('dt', {}, 'Lamp'), el('dd', {}, `${(L.N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} mm across · ${L.height.toFixed(0)} mm tall`),
         el('dt', {}, 'Walls'), el('dd', {}, `${L.N} × ${L.W.toFixed(1)} × ${L.HW.toFixed(0)} mm`),
         el('dt', {}, 'Photo window'), el('dd', {}, `${L.IW.toFixed(1)} × ${L.IH.toFixed(0)} mm`),
-        el('dt', {}, 'Top photo'), el('dd', {}, `${L.N}-sided lid · ${L.top.W.toFixed(0)} × ${L.top.H.toFixed(0)} mm photo`),
+        el('dt', {}, 'Top photo'), el('dd', {}, `${L.N}-sided lid · ${L.top.W.toFixed(0)} × ${L.top.H.toFixed(0)} mm photo · ${L.lidT.toFixed(1)} mm plate`),
         el('dt', {}, 'Base'), el('dd', {}, `${baseAcross.toFixed(0)} mm across · ${L.baseH.toFixed(0)} mm tall`),
         el('dt', {}, 'Parts'), el('dd', {}, L.joint === 'push' ? `${L.N} walls push into the base and top` : `${L.N} walls + top + LED base, all locking`)),
       lampError ? el('div', { class: 'note' }, '⚠ ' + lampError) : null,
@@ -1081,6 +1081,8 @@ function buildLampPane() {
       f.slider('lampLedH', 'Puck height', 3, 30, 0.5, 'mm', { show: (s) => s.lampLed === 'custom' }),
       f.slider('lampFaceW', 'Wall width', 40, 200, 1, 'mm', { tip: 'Outer width of each wall. Raised automatically if the LED would not fit.' }),
       f.slider('lampWinH', 'Photo height', 40, 200, 1, 'mm'),
+      f.slider('minThick', 'Min thick', 0.4, 3, 0.05, 'mm', { tip: 'Brightest areas. Below about 0.6 mm the walls get fragile and can show layer gaps.' }),
+      f.slider('maxThick', 'Max thick', 1, 5, 0.05, 'mm', { tip: 'Darkest areas. Raise it for a bright LED so shadows stay dark; the top thickens to match.' }),
       f.seg('lampJoint', 'Joints', [['dovetail', 'Dovetail'], ['push', 'Push-fit']], { tip: 'Dovetail: the walls slide together edge to edge, then drop into the base. Push-fit: each wall pushes straight down into the base. The top presses on either way.' }),
       f.seg('lampView', 'Preview', [['assembled', 'Assembled'], ['exploded', 'Exploded']]),
       info),

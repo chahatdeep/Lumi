@@ -6,13 +6,13 @@ import { lampLayout, buildLamp, placeWall, placeTop, fitLayout, DEFAULT_FACE_W }
 const M = await Module(); M.setup();
 const { Manifold, Mesh } = M;
 let ok = true;
-for (const joint of ['push', 'dovetail']) for (const N of [3, 4, 5, 6]) {
-  const L = lampLayout({ sides: N, faceW: DEFAULT_FACE_W[N], windowH: 94, clr: 0.18, miterClr: 0.1, grooveClr: 0.25, joint, grip: 0.15 });
+for (const [joint, maxThick] of [['push', 3.2], ['dovetail', 3.2], ['dovetail', 4.0]]) for (const N of [3, 4, 5, 6]) {
+  const L = lampLayout({ sides: N, faceW: DEFAULT_FACE_W[N], windowH: 94, clr: 0.18, miterClr: 0.1, grooveClr: 0.25, joint, grip: 0.15, maxThick });
   const cols = Math.round(L.IW / 1.0) + 1, rows = Math.round(L.IH / 1.0) + 1;
   const thick = Array.from({ length: N }, (_, k) => Float32Array.from({ length: cols * rows }, (_, i) => 0.8 + 2.4 * (((i % cols) + k * 7) % 13) / 12));
   const t0 = performance.now();
   const tc = Math.round(L.top.W) + 1, tr = Math.round(L.top.H) + 1;
-  const top = { T: Float32Array.from({ length: tc * tr }, (_, i) => 0.8 + 2.4 * ((i * 5) % 11) / 10), cols: tc, rows: tr };
+  const top = { T: Float32Array.from({ length: tc * tr }, (_, i) => 0.8 + (maxThick - 0.8) * ((i * 5) % 11) / 10), cols: tc, rows: tr };
   const r = buildLamp(M, L, thick, cols, rows, top);
   const ms = performance.now() - t0;
   const solid = (pos, idx) => new Manifold(new Mesh({ numProp: 3, vertProperties: pos, triVerts: idx }));
@@ -30,7 +30,7 @@ for (const joint of ['push', 'dovetail']) for (const N of [3, 4, 5, 6]) {
   }
   const good = worst < 1e-3 && (joint === 'dovetail' || (grip > 0.05 && grip < 3)) && r.report.genus.every((g) => g === 0) && r.report.topGenus === 0;
   ok &&= good;
-  console.log(`${joint.padEnd(8)} N=${N}: grip ${grip.toFixed(2)} mm3 | walls ${L.W.toFixed(1)} x ${L.HW} mm (window ${L.IW.toFixed(1)} x ${L.IH}, side border ${L.sb.toFixed(1)}), ` +
+  console.log(`${joint.padEnd(8)} max ${maxThick} top ${L.lidT.toFixed(1)} N=${N}: grip ${grip.toFixed(2)} mm3 | walls ${L.W.toFixed(1)} x ${L.HW} mm (window ${L.IW.toFixed(1)} x ${L.IH}, side border ${L.sb.toFixed(1)}), ` +
     `lamp ${(N % 2 ? 2 * L.R : 2 * L.A).toFixed(0)} x ${L.height.toFixed(0)} mm | top photo ${L.top.W.toFixed(0)} x ${L.top.H.toFixed(0)} | genus ${r.report.genus.join(',')} lid ${r.report.topGenus} | overlap ${worst.toFixed(4)} mm3 | ` +
     `skins ${L.skins.toFixed(2)} mm | ${ms.toFixed(0)} ms ${good ? 'OK' : 'FAIL'}`);
   for (const m of [...walls, base, lid]) m.delete();

@@ -1,7 +1,7 @@
 // Lamp kit: an N-sided lamp (3-6 walls) of flat lithophane plates that lock together, plus a base for a
 // round LED puck (default: Bambu Lab LED Lamp Kit 001, D59 x 8 mm).
-//   walls  mitred edges; joint 'push' (default): plain plates pushed into the base and top slots, held by grip ribs;
-//          joint 'dovetail': plates also joined by sliding dovetails (rail on the right edge, channel on the left edge)
+//   walls  mitred edges; joint 'dovetail' (default): joined by sliding dovetails (rail on the right edge, channel on the
+//          left edge); joint 'push': plain plates pushed into the base and top slots, held by grip ribs
 //   base   LED pocket, cable slot at the back, finger notch at the front, and a groove the wall bottoms drop into
 //   top    an N-sided lithophane lid; the wall tops drop into a groove on its underside, locking the ring at both ends
 // Geometry is exact CSG (manifold-3d); every part comes out watertight. Units: mm, Z up.
@@ -19,7 +19,7 @@ const ROOT_W = 2.4, TIP_W = 3.4, DEPTH = 1.8;   // dovetail rail
 const G_DEPTH = 4.0, FLOOR = 2.0, BASE_WALL = 4.0;
 const OPAQUE = 50;
 const LID_G = 3.0;        // depth the wall tops sit in the lid groove (less than TB, so the photo stays clear)
-const LID_T = 3.6;        // lid plate thickness above the wall tops (>= the thickest lithophane pixel)
+const LID_T = 3.6;        // minimum lid plate thickness above the wall tops; grows to max thickness + 0.4
 const LID_RIM = 2.4;      // lid wall outside the groove
 const LID_PLUG = 2.0;     // inner locating ring inside the walls
 const FIT_H = 20;         // fit test: wall slice height
@@ -57,6 +57,7 @@ export function lampLayout(o) {
   sb = Math.max(sb, 5.5);
   const IW = W - 2 * sb, IH = o.windowH, HW = IH + TB + BB;
   const pocketTop = FLOOR + led.h + 2;
+  const lidT = Math.max(LID_T, (o.maxThick ?? 3.2) + 0.4);       // the top's photo gets the same contrast as the walls
   // lid photo: the N-gon opening inside the walls; the photo is cropped to the opening's bounding box
   const Aw = A - TE - o.grooveClr - LID_PLUG;
   const corners = Array.from({ length: N }, (_, k) => polar(Aw / cos, -90 + half + (360 / N) * k));
@@ -64,8 +65,8 @@ export function lampLayout(o) {
   const ty0 = Math.min(...corners.map((c) => c[1])), ty1 = Math.max(...corners.map((c) => c[1]));
   return { N, half, tan, cos, W, minW, A, R, rj, sb, IW, IH, HW, led, pocketD, pocketTop, baseH: pocketTop + G_DEPTH,
     clr, miter: o.miterClr, grooveClr: o.grooveClr, skins: best, joint, grip: o.grip ?? 0.15,
-    Aw, top: { x0: tx0, x1: tx1, y0: ty0, y1: ty1, W: tx1 - tx0, H: ty1 - ty0 }, lidG: LID_G, lidT: LID_T,
-    lidA: A + o.grooveClr + LID_RIM, height: pocketTop + HW + LID_T };
+    Aw, top: { x0: tx0, x1: tx1, y0: ty0, y1: ty1, W: tx1 - tx0, H: ty1 - ty0 }, lidG: LID_G, lidT,
+    lidA: A + o.grooveClr + LID_RIM, height: pocketTop + HW + lidT };
 }
 
 /** Builds the lamp. thick[k]: Float32Array rows x cols of wall k's lithophane thickness (top row first).
@@ -170,24 +171,24 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
   }
 
   function lid(T, tc, tr) {
-    // lid frame: z = 0 is the wall tops; the groove runs from -LID_G to 0, the plate from 0 to LID_T
+    // lid frame: z = 0 is the wall tops; the groove runs from -LID_G to 0, the plate from 0 to L.lidT
     const outline = keep(keep(keep(new CrossSection([ngon(L.lidA)], 'EvenOdd')).offset(-6, 'Round', 2, 48)).offset(6, 'Round', 2, 48));
-    const roof = L.fit ? FIT_ROOF : LID_T;
+    const roof = L.fit ? FIT_ROOF : L.lidT;
     let b = keep(keep(outline.extrude(LID_G + roof)).translate([0, 0, -LID_G]));
     const groove = keep(prism(ngon(L.A + L.grooveClr), -LID_G - 1, 0).subtract(prism(ngon(L.A - TE - L.grooveClr), -LID_G - 2, 1)));
     b = keep(b.subtract(groove));
-    b = keep(b.subtract(prism(ngon(L.Aw), -LID_G - 1, LID_T + 1)));
+    b = keep(b.subtract(prism(ngon(L.Aw), -LID_G - 1, L.lidT + 1)));
     if (L.joint === 'push') b = keep(b.add(ribs(-LID_G + 1, 0.5)));
     if (L.fit) return b;                               // fit test: the groove ring without the photo
-    // photo slab: flat outer face on top (z = LID_T), relief underneath, clipped to the opening
+    // photo slab: flat outer face on top (z = L.lidT), relief underneath, clipped to the opening
     const ov = 0.6, nx = tc + 2, ny = tr + 2, P = L.top;
     const x0 = P.x0 - ov, x1 = P.x1 + ov, y0 = P.y0 - ov, y1 = P.y1 + ov;
     const n = nx * ny, pos = new Float32Array(n * 6);
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
       const tj = Math.min(tr - 1, Math.max(0, j - 1)), ti = Math.min(tc - 1, Math.max(0, i - 1));
-      const t = Math.min(LID_T - 0.2, T[tj * tc + ti]), v = j * nx + i;
+      const t = Math.min(L.lidT - 0.2, T[tj * tc + ti]), v = j * nx + i;
       const x = x0 + ((x1 - x0) * i) / (nx - 1), y = y1 - ((y1 - y0) * j) / (ny - 1);
-      pos.set([x, y, LID_T - t], v * 3); pos.set([x, y, LID_T], (v + n) * 3);
+      pos.set([x, y, L.lidT - t], v * 3); pos.set([x, y, L.lidT], (v + n) * 3);
     }
     const tris = [];
     for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
@@ -206,7 +207,7 @@ export function buildLamp(M, L, thick, cols, rows, top = null) {
       for (let t = 0; t < idx.length; t += 3) { const x = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = x; }
       slab = keep(new Manifold(new Mesh({ numProp: 3, vertProperties: pos, triVerts: idx })));
     }
-    slab = keep(slab.intersect(prism(ngon(L.Aw + ov), -1, LID_T + 1)));
+    slab = keep(slab.intersect(prism(ngon(L.Aw + ov), -1, L.lidT + 1)));
     return keep(b.add(slab));
   }
 
@@ -282,7 +283,7 @@ export function placeTop(pos, L, lift = 0) {
 /** Lid upside down for printing: smooth top face on the bed. */
 export function topPrintPose(pos, L) {
   const p = new Float32Array(pos.length);
-  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = -pos[i + 1]; p[i + 2] = LID_T - pos[i + 2]; }
+  for (let i = 0; i < pos.length; i += 3) { p[i] = pos[i]; p[i + 1] = -pos[i + 1]; p[i + 2] = L.lidT - pos[i + 2]; }
   return p;
 }
 
